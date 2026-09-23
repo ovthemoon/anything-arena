@@ -34,4 +34,26 @@ describe('AudioManager', () => {
     am.playCommentary('e1', '/a', 'a', 5_000)
     expect(play).toHaveBeenCalledTimes(1)
   })
+
+  test('schedule does not play until playScheduled is called for that event', () => {
+    const play = vi.fn().mockReturnValue({ stop: vi.fn() })
+    const am = createAudioManager({ now: () => 0, play, speak: vi.fn() })
+    am.schedule('e1', '/a', 'a', 20_000)
+    expect(play).not.toHaveBeenCalled()
+    am.playScheduled('e1')
+    expect(play).toHaveBeenCalledWith('/a')
+  })
+  test('playScheduled before arrival plays when audio arrives inside the window, not after', () => {
+    let t = 0
+    const play = vi.fn().mockReturnValue({ stop: vi.fn() })
+    const am = createAudioManager({ now: () => t, play, speak: vi.fn() })
+    am.playScheduled('e1', 2_500)
+    t = 1_000
+    am.schedule('e1', '/a', 'a', 20_000)
+    expect(play).toHaveBeenCalledTimes(1)
+    am.playScheduled('e2', 2_500)
+    t = 5_000
+    am.schedule('e2', '/b', 'b', 20_000)
+    expect(play).toHaveBeenCalledTimes(1)
+  })
 })

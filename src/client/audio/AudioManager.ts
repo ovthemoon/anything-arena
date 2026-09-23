@@ -10,9 +10,21 @@ export interface AudioManagerDeps {
 
 export interface AudioManager {
   unlock: () => Promise<boolean>
+  /** 즉시 재생 (디버그 화면용). 연출 화면은 schedule + playScheduled 를 쓴다. */
   playCommentary: (eventId: string, audioPath: string | null, text: string, validUntil: number) => void
+  /** 도착한 해설을 보관만 한다. 재생은 그 공격의 해설 차례에 playScheduled 로. */
+  schedule: (eventId: string, audioPath: string | null, text: string, validUntil: number) => void
+  /**
+   * 해당 공격의 해설 차례가 됐을 때 부른다. 이미 도착해 있으면 즉시, 아직이면 windowMs 안에 도착할 때만 재생한다.
+   * 창이 지나면 버린다 (다 끝났는데 뒤늦게 재생되는 일 방지).
+   */
+  playScheduled: (eventId: string, windowMs?: number) => void
   setMuted: (muted: boolean) => void
 }
+
+type Scheduled = { audioPath: string | null; text: string; validUntil: number }
+
+const DEFAULT_WINDOW_MS = 2_500
 
 /**
  * Logic-only audio player, driven by injected deps so it is testable without
@@ -24,6 +36,8 @@ export function createAudioManager(deps: AudioManagerDeps): AudioManager {
   let muted = false
   let current: AudioHandle | null = null
   const seenEventIds = new Set<string>()
+  const scheduled = new Map<string, Scheduled>()
+  let wanted: { eventId: string; until: number } | null = null
 
   const playCommentary = (eventId: string, audioPath: string | null, text: string, validUntil: number): void => {
     if (muted) return
@@ -39,6 +53,25 @@ export function createAudioManager(deps: AudioManagerDeps): AudioManager {
     } else {
       deps.speak(text)
     }
+  }
+
+  const schedule = (eventId: string, audioPath: string | null, text: string, validUntil: number): void => {
+    if (seenEventIds.has(eventId)) return
+    scheduled.set(eventId, { audioPath, text, validUntil })
+    if (wanted && wanted.eventId === eventId && deps.now() < wanted.until) {
+      wanted = null
+      playCommentary(eventId, audioPath, text, validUntil)
+    }
+  }
+
+  const playScheduled = (eventId: string, windowMs: number = DEFAULT_WINDOW_MS): void => {
+    const entry = scheduled.get(eventId)
+    if (entry) {
+      wanted = null
+      playCommentary(eventId, entry.audioPath, entry.text, entry.validUntil)
+      return
+    }
+    wanted = { eventId, until: deps.now() + windowMs }
   }
 
   const setMuted = (value: boolean): void => {
@@ -58,7 +91,7 @@ export function createAudioManager(deps: AudioManagerDeps): AudioManager {
     }
   }
 
-  return { unlock, playCommentary, setMuted }
+  return { unlock, playCommentary, schedule, playScheduled, setMuted }
 }
 
 export function createBrowserAudioManager(): AudioManager {

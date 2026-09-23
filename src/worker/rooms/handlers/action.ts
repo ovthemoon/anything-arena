@@ -4,11 +4,13 @@ import type { ClientMessage } from '../../../shared/schemas/messages'
 import type { WeaponProfile } from '../../../shared/schemas/weapon'
 import { acceptAction, applyFoul, bothAccepted, canSubmitCustom, countCustomAttempt, other, type PendingAction } from '../../game/engine'
 import { type RoomCtx, TimeoutError, errorMessage, withTimeout } from '../room-context'
-import { resolveAndAnnounce } from './round'
+import { precomputeCommentary, resolveAndAnnounce } from './round'
 
 type ActionSubmit = Extract<ClientMessage, { type: 'action_submit' }>
 
 const JUDGE_TIMEOUT_MS = 1_500
+/** 둘 다 접수된 뒤, 마지막 공격의 해설·음성 준비를 기다리는 최대 시간. 넘으면 그냥 정산한다. */
+const PRECOMPUTE_WAIT_MS = 4_000
 const LABEL_MAX_CHARS = 24
 /** 긁기 배틀: 입력한 한 마디가 곧 기술명. 길면 앞부분만. */
 const customLabel = (text: string): string => {
@@ -39,7 +41,13 @@ const accept = async (ctx: RoomCtx, slot: PlayerSlot, action: PendingAction, now
   await ctx.commit(acceptAction(ctx.getState(), slot, action))
   ctx.sendTo(slot, { type: 'action_accepted', actionId: action.actionId })
   ctx.sendTo(other(slot), { type: 'opponent_ready', ready: true })
-  if (bothAccepted(ctx.getState())) await resolveAndAnnounce(ctx, now)
+  // 해설·음성은 접수 즉시 미리 만든다. 정산을 기다리지 않는다.
+  const precompute = precomputeCommentary(ctx, slot, action).catch((e: unknown) => console.warn('[room] precompute failed', String(e).slice(0, 120)))
+  if (bothAccepted(ctx.getState())) {
+    // 둘 다 접수되면 정산 전에 잠깐(최대 TTS 시간) 기다려 방송과 같이 나가게 한다.
+    await Promise.race([precompute, new Promise((r) => setTimeout(r, PRECOMPUTE_WAIT_MS))])
+    await resolveAndAnnounce(ctx, now)
+  }
 }
 
 const fallbackAction = (actionId: string, fallbackReason: PendingAction['fallbackReason']): PendingAction =>
