@@ -31,7 +31,7 @@
     "APP_ENV": "production",
     "AI_MODE": "mock",
     "ALLOWED_ORIGINS": "http://localhost:5173",
-    "TTS_VOICE": "",
+    "TTS_VOICE": "Korean_SweetGirl",
     "RULESET_VERSION": "v0.1",
     "MAX_PLAYERS": "2",
     "INITIAL_HP": "100",
@@ -45,7 +45,7 @@
     "IDLE_ROOM_TTL_MS": "600000",
     "TEXT_MODEL": "openai/gpt-5-mini",
     "JEV_MODEL": "jev-latest",
-    "TTS_MODEL": "google/gemini-3.1-flash-tts-preview",
+    "TTS_MODEL": "minimax/speech-2.8-turbo",
     "PROMPT_VERSION": "v0.1-draft"
   }
 }
