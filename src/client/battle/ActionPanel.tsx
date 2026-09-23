@@ -9,7 +9,6 @@ export interface ActionPanelProps {
   isCollapsed: boolean
   commentaryText: string | null
   rejected: RejectedInfo | null
-  onTechnique: (techniqueId: string) => void
   onFreeText: (text: string) => void
 }
 
@@ -27,16 +26,15 @@ const noteFor = (rejected: RejectedInfo | null): string | null => {
   return REJECT_NOTES[rejected.reasonCode] ?? '입력이 거절됐어요. 다시 써주세요.'
 }
 
-/** 하단: 해설·기술 2개·자유 입력·공격. presetOnly 면 자유 입력을 잠근다. */
-export function ActionPanel({ me, isInputOpen, isCollapsed, commentaryText, rejected, onTechnique, onFreeText }: ActionPanelProps) {
+/** 하단: 해설·자유 입력·공격. 준비된 기술 버튼은 없다(사용자 결정). presetOnly 면 자유 입력을 잠근다. */
+export function ActionPanel({ me, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText }: ActionPanelProps) {
   const [text, setText] = useState('')
-  const techniques = me?.weapon?.techniques ?? []
   const presetOnly = me?.presetOnly === true
   const submitted = me?.actionStatus === 'ACCEPTED' || me?.actionStatus === 'VALIDATING'
   const canAct = isInputOpen && !submitted
   const chars = countChars(text)
   const freeInvalid = chars === 0 || chars > LIMITS.ACTION_TEXT
-  const note = presetOnly ? '이번 경기는 준비된 기술만 사용할 수 있습니다.' : noteFor(rejected)
+  const note = presetOnly ? '자유 입력이 잠겼습니다. 이번 경기는 기본 공격으로 진행됩니다.' : noteFor(rejected)
 
   const submitFree = () => {
     if (!canAct || presetOnly || freeInvalid) return
@@ -53,13 +51,6 @@ export function ActionPanel({ me, isInputOpen, isCollapsed, commentaryText, reje
             {commentaryText}
           </>
         )}
-      </div>
-      <div className="techs">
-        {techniques.map((t) => (
-          <button key={t.id} type="button" className="tech" disabled={!canAct} onClick={() => onTechnique(t.id)}>
-            {t.name}
-          </button>
-        ))}
       </div>
       <form
         className="freeform"

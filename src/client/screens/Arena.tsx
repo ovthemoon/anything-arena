@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PlayerSlot } from '../../shared/schemas/enums'
+import type { RoundResolved } from '../../shared/schemas/match'
 import { createBrowserAudioManager } from '../audio/AudioManager'
 import { useMatch } from '../state/useMatch'
 import type { ClientState } from '../state/match-reducer'
@@ -21,7 +22,7 @@ export interface ArenaProps {
 
 const FOUL_OVERLAY_MS = 2600
 const FOUL_TEXT = '삐익! 인신공격 반칙입니다. 무기로 승부하세요.'
-const FOUL_LOCK_TEXT = '자유 입력이 잠겼습니다. 준비된 기술만 사용할 수 있습니다.'
+const FOUL_LOCK_TEXT = '자유 입력이 잠겼습니다. 이번 경기는 기본 공격으로 진행됩니다.'
 
 /** 같은 방 참가 요청은 탭당 한 번. StrictMode 이중 실행·재마운트에서도 재사용. */
 const joinInFlight = new Map<string, Promise<string | null>>()
@@ -138,7 +139,18 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   useCommentaryAudio(state, !prefs.soundOn)
   const foul = useFoulOverlay(state, !prefs.soundOn)
   const seconds = useCountdownSeconds(state.match?.deadlineAt)
-  const playback = usePlayback(state.playback, prefs.reducedMotion)
+  // round_started 가 오면 리듀서가 playback 을 지우지만, 재생이 끝날 때까지는 마지막 round_resolved 를 붙잡는다.
+  const [held, setHeld] = useState<RoundResolved | null>(null)
+  useEffect(() => {
+    if (state.playback) setHeld(state.playback)
+  }, [state.playback])
+  const playback = usePlayback(held, prefs.reducedMotion)
+  useEffect(() => {
+    if (playback.done && !state.playback) setHeld(null)
+  }, [playback.done, state.playback])
+  useEffect(() => {
+    if (!state.match || state.match.phase === 'LOBBY' || state.match.phase === 'PREPARING') setHeld(null)
+  }, [state.match?.matchId, state.match?.phase])
   const [stageRef, stageWidth] = useStageWidth()
 
   const you: PlayerSlot | null = state.you === 'A' || state.you === 'B' ? state.you : null
@@ -162,8 +174,9 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   }
 
   const phase = match?.phase ?? null
-  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK'
-  const isFinished = phase === 'FINISHED' || phase === 'CLOSED'
+  const isPlayingOut = held !== null && !playback.done
+  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || (isPlayingOut && phase === 'FINISHED')
+  const isFinished = (phase === 'FINISHED' && !isPlayingOut) || phase === 'CLOSED'
 
   return (
     <div ref={stageRef} className="arena" style={{ position: 'relative' }}>
@@ -175,7 +188,7 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
       {match && !isBattle && !isFinished && (
         <LobbyScreen state={state} you={you} roomCode={roomCode} characterIds={characterIds} onPickCharacter={setMyPick} send={send} stageWidth={stageWidth} />
       )}
-      {match && isBattle && <BattleScreen state={state} you={you} playback={playback} seconds={seconds} characterIds={characterIds} prefs={prefs} stageWidth={stageWidth} send={send} />}
+      {match && isBattle && <BattleScreen state={state} you={you} playback={playback} resolved={held} seconds={seconds} characterIds={characterIds} prefs={prefs} stageWidth={stageWidth} send={send} />}
       {match && isFinished && <ResultScreen state={state} you={you} characterIds={characterIds} send={send} />}
 
       {foul && (

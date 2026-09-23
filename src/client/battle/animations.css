@@ -49,14 +49,14 @@
 /* ── 무기 (소환수) ─────────────────────────────────────── */
 .weapon {
   position: absolute;
-  bottom: 44%;
+  bottom: 52%;
   height: 18%;
   aspect-ratio: 1;
   will-change: transform, opacity;
   filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
 }
-.weapon--left  { left: 24%; }
-.weapon--right { right: 24%; }
+.weapon--left  { left: 29%; }
+.weapon--right { right: 29%; }
 .weapon img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .weapon--float  { animation: weapon-float 2.4s ease-in-out infinite; }
 .weapon--windup { animation: weapon-windup 300ms ease-in 1 forwards; }
@@ -114,7 +114,7 @@
 /* ── 효과 글씨 ───────────────────────────────────────── */
 .fx { position: absolute; pointer-events: none; font-weight: 900; letter-spacing: -.02em; text-shadow: 0 0 6px #000, 3px 3px 0 #000, -2px -2px 0 #000; }
 .fx--name {
-  left: 50%; top: 26%; transform: translateX(-50%);
+  left: 50%; top: 40%; transform: translateX(-50%);
   font-size: clamp(22px, 5.2vw, 64px); color: #ffe259;
   animation: name-in 400ms cubic-bezier(.2,1.4,.4,1) 1 forwards;
 }

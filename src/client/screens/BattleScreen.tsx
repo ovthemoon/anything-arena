@@ -1,5 +1,5 @@
 import type { PlayerSlot } from '../../shared/schemas/enums'
-import type { AttackEvent } from '../../shared/schemas/match'
+import type { AttackEvent, RoundResolved } from '../../shared/schemas/match'
 import type { ClientMessage } from '../../shared/schemas/messages'
 import type { ClientState } from '../state/match-reducer'
 import { newId } from '../lib/ids'
@@ -19,6 +19,8 @@ export interface BattleScreenProps {
   state: ClientState
   you: PlayerSlot | null
   playback: PlaybackState
+  /** 재생 중인 round_resolved. round_started 가 먼저 와도 재생이 끝날 때까지 유지된다. */
+  resolved: RoundResolved | null
   seconds: number | null
   characterIds: Record<PlayerSlot, CharacterId | null>
   prefs: Prefs
@@ -73,7 +75,7 @@ const visualFor = (slot: PlayerSlot, pb: PlaybackState, attack: AttackEvent | nu
 }
 
 /** 배틀 화면: 배경·캐릭터·무기·효과·HUD·(플레이어면) 입력 패널. 모든 값은 서버 상태에서 파생. */
-export function BattleScreen({ state, you, playback, seconds, characterIds, prefs, stageWidth, send }: BattleScreenProps) {
+export function BattleScreen({ state, you, playback, resolved, seconds, characterIds, prefs, stageWidth, send }: BattleScreenProps) {
   const match = state.match
   if (!match) return null
 
@@ -84,19 +86,18 @@ export function BattleScreen({ state, you, playback, seconds, characterIds, pref
   const isShaking = isResult && prefs.shakeOn && fx.shakePx > 0 && !prefs.reducedMotion
   const travelMs = prefs.reducedMotion ? 200 : STEP_MS.travel
 
-  const isPlaying = match.phase === 'ROUND_PLAYBACK' && !playback.done
-  const isInputOpen = match.phase === 'ROUND_INPUT'
+  const isPlaying = resolved !== null && !playback.done
+  const isInputOpen = match.phase === 'ROUND_INPUT' && !isPlaying
   const me = you ? match.players[you] : undefined
 
   const commentaryText = attack ? state.commentary[attack.eventId]?.text ?? null : null
   const showSubtitle = !!commentaryText && (playback.step === 'commentary' || playback.done)
 
-  const submitTechnique = (techniqueId: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), techniqueId })
   const submitFreeText = (text: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), text })
 
   const playersForHud = {
-    A: match.players.A ? { ...match.players.A, hp: displayedHp(playback, state.playback, 'A', match.players.A.hp) } : undefined,
-    B: match.players.B ? { ...match.players.B, hp: displayedHp(playback, state.playback, 'B', match.players.B.hp) } : undefined,
+    A: match.players.A ? { ...match.players.A, hp: displayedHp(playback, resolved, 'A', match.players.A.hp) } : undefined,
+    B: match.players.B ? { ...match.players.B, hp: displayedHp(playback, resolved, 'B', match.players.B.hp) } : undefined,
   }
 
   const arenaStyle = { ['--shake-px' as string]: `${fx.shakePx}px`, ['--shake-ms' as string]: `${fx.shakeMs}ms` }
@@ -131,7 +132,7 @@ export function BattleScreen({ state, you, playback, seconds, characterIds, pref
       {attack && playback.step === 'name' && <Fx kind="name" text={attack.techniqueLabel} />}
       {attack && isResult && <Fx kind="result" text={fx.label} outcome={outcome} damage={attack.damage} targetSide={sideOf(attack.target)} showDamage={fx.showDamage} />}
 
-      <Hud players={playersForHud} characterIds={characterIds} roundId={match.roundId} seconds={isInputOpen ? seconds : null} />
+      <Hud players={playersForHud} characterIds={characterIds} roundId={isPlaying && resolved ? resolved.roundId : match.roundId} seconds={isInputOpen ? seconds : null} />
 
       {showSubtitle && <div className={`subtitle${you ? ' is-raised' : ''}`}>🔊 {commentaryText}</div>}
 
@@ -142,7 +143,6 @@ export function BattleScreen({ state, you, playback, seconds, characterIds, pref
           isCollapsed={isPlaying}
           commentaryText={null}
           rejected={state.rejected}
-          onTechnique={submitTechnique}
           onFreeText={submitFreeText}
         />
       )}

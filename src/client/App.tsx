@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Arena } from './screens/Arena'
 import { DebugArena } from './screens/DebugArena'
+import { DemoScreen } from './screens/DemoScreen'
 import { StartScreen } from './screens/StartScreen'
 import './App.css'
 
@@ -31,6 +32,7 @@ function App() {
     setPathname(path)
   }
 
+  if (pathname === '/demo') return <DemoScreen />
   const route = parseRoute(pathname)
   if (route?.kind === 'screen') return <Arena roomCode={route.code} />
   if (route?.kind === 'play') return <Arena roomCode={route.code} autoJoin />

@@ -53,13 +53,6 @@ function WeaponCard({ weapon }: { weapon: WeaponProfile }) {
         ))}
         <span className="wcard__chip is-weak">약점: {weapon.weakness}</span>
       </div>
-      <div className="wcard__row">
-        {weapon.techniques.map((t) => (
-          <span key={t.id} className="wcard__chip">
-            ⚔ {t.name}
-          </span>
-        ))}
-      </div>
     </div>
   )
 }
@@ -68,7 +61,7 @@ function Seat({ player, id, side, stageWidth }: { player: PublicPlayer | undefin
   const label = player?.nickname ?? (player?.connected ? '무기 고르는 중' : '빈 자리')
   return (
     <>
-      <CharacterSprite id={id} pose="idle" side={side} />
+      <CharacterSprite id={player?.connected ? id : null} pose="idle" side={side} />
       {player?.weapon && (
         <WeaponSprite imageUrl={weaponImageUrlOf(player.weapon)} visualTag={player.weapon.visualTag} side={side} phase="float" animation="DASH" travelMs={0} stageWidth={stageWidth} />
       )}
@@ -100,7 +93,7 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
     send({
       type: 'weapon_submit',
       requestId: newId(),
-      weapon: { nickname, character: characterOf(myCharacter).blurb, weaponName, description },
+      weapon: { nickname, characterId: myCharacter, character: characterOf(myCharacter).blurb, weaponName, description },
     })
     setSubmitted(true)
   }
