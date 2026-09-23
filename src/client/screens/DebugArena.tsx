@@ -1,3 +1,4 @@
+import { newId } from '../lib/ids'
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { useMatch } from '../state/useMatch'
@@ -239,7 +240,7 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
   const submitWeapon = () => {
     send({
       type: 'weapon_submit',
-      requestId: crypto.randomUUID(),
+      requestId: newId(),
       weapon: { nickname, character, weaponName, description },
     })
   }
@@ -251,13 +252,13 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
 
   const submitTechnique = (techniqueId: string) => {
     if (!match) return
-    send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: crypto.randomUUID(), techniqueId })
+    send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), techniqueId })
   }
 
   const submitFreeText = () => {
     if (!match) return
     if (countChars(freeText) === 0 || countChars(freeText) > LIMITS.ACTION_TEXT) return
-    send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: crypto.randomUUID(), text: freeText })
+    send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), text: freeText })
     setFreeText('')
   }
 
@@ -390,16 +391,42 @@ interface DebugArenaProps {
  * renders it. A later session can replace ScreenView/PlayView with real UI as long as
  * it keeps using useMatch + ClientState the same way.
  */
+/** 같은 방에 대한 참가 요청은 탭당 한 번만. React StrictMode 의 이중 실행과 재마운트에서도 재사용된다. */
+const joinInFlight = new Map<string, Promise<string | null>>()
+
+const joinRoom = (roomCode: string): Promise<string | null> => {
+  const existing = joinInFlight.get(roomCode)
+  if (existing) return existing
+  const p = fetch(`/api/rooms/${roomCode}/join`, { method: 'POST', credentials: 'same-origin' })
+    .then(async (r) => {
+      const body = (await r.json().catch(() => null)) as { error?: string | null } | null
+      return r.ok ? null : body?.error ?? `참가 실패 (${r.status})`
+    })
+    .catch(() => '참가 요청 실패 (네트워크)')
+  joinInFlight.set(roomCode, p)
+  return p
+}
+
 export function DebugArena({ roomCode, autoJoin }: DebugArenaProps) {
+  const [joined, setJoined] = useState(!autoJoin)
+  const [joinError, setJoinError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!autoJoin) return
-    fetch(`/api/rooms/${roomCode}/join`, { method: 'POST', credentials: 'same-origin' }).catch(() => {
-      /* surfaced later via room_snapshot / connection state */
+    let cancelled = false
+    joinRoom(roomCode).then((err) => {
+      if (cancelled) return
+      if (err) setJoinError(err)
+      else setJoined(true)
     })
+    return () => {
+      cancelled = true
+    }
   }, [roomCode, autoJoin])
 
-  const { state, send } = useMatch(roomCode)
+  const { state, send } = useMatch(joined ? roomCode : null)
 
+  if (joinError) return <p style={{ color: 'salmon' }}>참가할 수 없습니다: {joinError}</p>
   if (state.you === 'SCREEN') return <ScreenView state={state} />
   return <PlayView state={state} send={send} />
 }
