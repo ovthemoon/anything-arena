@@ -154,6 +154,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
         <ActionPanel
           me={me}
           opponentWeakness={opponent?.weapon?.weakness ?? null}
+          suggestionSeed={`${match.matchId}:${match.roundId}:${you}`}
           isInputOpen={isInputOpen}
           isCollapsed={isPlaying}
           commentaryText={null}

@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { LIMITS, countChars } from '../../shared/rules/limits'
 import type { PublicPlayer } from '../../shared/schemas/match'
 import type { RejectedInfo } from '../state/match-reducer'
+import { pickSuggestions } from './suggestions'
 
 export interface ActionPanelProps {
   me: PublicPlayer | undefined
   /** 상대 카드의 아픈 곳 (쉼표 구분). 입력창 위 힌트 */
   opponentWeakness: string | null
+  /** 경기·라운드·좌석 씨앗. 같으면 새로고침해도 같은 추천 3개 */
+  suggestionSeed: string
   isInputOpen: boolean
   isCollapsed: boolean
   commentaryText: string | null
@@ -31,9 +34,11 @@ const noteFor = (rejected: RejectedInfo | null): string | null => {
 }
 
 /** 하단: 상대 아픈 곳 힌트·자유 입력·공격. 추천 한 마디는 입력창을 채우기만 한다. presetOnly(반칙 2회)면 직접 입력을 잠그고 추천 중 골라서만 공격. */
-export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText, onTechnique }: ActionPanelProps) {
+export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText, onTechnique }: ActionPanelProps) {
   const [text, setText] = useState('')
-  const suggestions = me?.weapon?.techniques ?? []
+  const [shuffle, setShuffle] = useState(0)
+  const suggestions = pickSuggestions(me?.weapon?.techniques ?? [], suggestionSeed, shuffle)
+  const hasMore = (me?.weapon?.techniques.length ?? 0) > suggestions.length
   const weakPoints = (opponentWeakness ?? '').split(',').map((w) => w.trim()).filter(Boolean)
   const presetOnly = me?.presetOnly === true
   const submitted = me?.actionStatus === 'ACCEPTED' || me?.actionStatus === 'VALIDATING'
@@ -96,6 +101,11 @@ export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, co
               {t.name}
             </button>
           ))}
+          {hasMore && (
+            <button type="button" className="chip-btn" onClick={() => setShuffle((n) => n + 1)}>
+              🔀 다른 거
+            </button>
+          )}
         </div>
       )}
       {suggestions.length > 0 && !presetOnly && (
@@ -106,6 +116,11 @@ export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, co
               {t.name}
             </button>
           ))}
+          {hasMore && (
+            <button type="button" className="chip-btn" onClick={() => setShuffle((n) => n + 1)}>
+              🔀 다른 거
+            </button>
+          )}
         </div>
       )}
       <div className={`panel__note${rejected && !presetOnly ? ' is-error' : ''}`}>
