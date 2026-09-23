@@ -12,3 +12,13 @@ describe('roster', () => {
     }
   })
 })
+
+describe('roster voice', () => {
+  test('every character has a tone, 2 catchphrases and 2 hates', () => {
+    for (const entry of Object.values(ROSTER)) {
+      expect(entry.voice.tone.length).toBeGreaterThan(0)
+      expect(entry.voice.catchphrases).toHaveLength(2)
+      expect(entry.voice.hates).toHaveLength(2)
+    }
+  })
+})

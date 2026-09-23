@@ -1,6 +1,7 @@
 import { JudgeResult } from '../../shared/schemas/judge'
 import { ModerationDecision } from '../../shared/schemas/enums'
 import type { JudgeRequest } from './types'
+import { rosterVoice } from '../../shared/rules/roster'
 
 const TYPESAFE_URL = 'https://api.typesafe.ai/v1/systemone'
 
@@ -26,19 +27,26 @@ interface SystemOneResponse {
  * capabilities = 성격·말투, weakness = 찌르면 아픈 약점 목록.
  * 주의: 상대(defender)의 이번 라운드 action 은 절대 포함하지 않는다 (PRD 6).
  */
-const buildAttackerDefenderState = (req: JudgeRequest, rulesetVersion: string) => ({
-  attacker: {
-    name: req.attacker.characterName || req.attacker.displayName,
-    persona: req.attacker.capabilities,
-  },
-  defender: {
-    name: req.defender.characterName || req.defender.displayName,
-    persona: req.defender.capabilities,
-    weakPoints: req.defender.weakness,
-  },
-  action: req.actionText,
-  rulesetVersion,
-})
+const buildAttackerDefenderState = (req: JudgeRequest, rulesetVersion: string) => {
+  const attackerVoice = rosterVoice(req.attacker.characterId)
+  const defenderVoice = rosterVoice(req.defender.characterId)
+  return {
+    attacker: {
+      name: req.attacker.characterName || req.attacker.displayName,
+      persona: req.attacker.capabilities,
+      // 말맛: 이 캐릭터답게 말했는지 볼 때 쓴다. 자유 입력 무기면 없음.
+      ...(attackerVoice ? { tone: attackerVoice.tone, catchphrases: attackerVoice.catchphrases } : {}),
+    },
+    defender: {
+      name: req.defender.characterName || req.defender.displayName,
+      persona: req.defender.capabilities,
+      weakPoints: req.defender.weakness,
+      ...(defenderVoice ? { hates: defenderVoice.hates } : {}),
+    },
+    action: req.actionText,
+    rulesetVersion,
+  }
+}
 
 const JUDGE_QUESTIONS = {
   moderation: {
@@ -71,13 +79,13 @@ const JUDGE_QUESTIONS = {
     type: 'choice',
     instructions: {
       question:
-        '`action` 이 얼마나 잘 긁었나? `defender.weakPoints`(아픈 곳)를 정확히 찌르고 재치 있으면 STRONG, 그럭저럭 웃기면 NORMAL, 밋밋하면 LIMITED, 긁기가 아니거나 뻔한 폭력이면 MISS.',
+        '`action` 이 얼마나 잘 긁었나? `defender.weakPoints`(아픈 곳)나 `defender.hates`(발끈하는 것)를 정확히 찌르고 재치 있으면 STRONG, 그럭저럭 웃기면 NORMAL, 밋밋하면 LIMITED, 긁기가 아니거나 뻔한 폭력이면 MISS. `attacker.tone`·`attacker.catchphrases` 가 있으면 그 말투답게 말했을 때 한 단계 후하게 본다.',
     },
     criteria: {
       MISS: '실제 무기·폭력 묘사, 공격이 아님, 의미 없음. 피해 0',
       LIMITED: '긁기는 맞지만 뻔하고 약함',
-      NORMAL: '캐릭터에 맞는 그럭저럭 웃긴 긁기',
-      STRONG: '`defender.weakPoints` 중 하나를 정확히 찌르거나 비유가 아주 재치 있음',
+      NORMAL: '캐릭터에 맞는 그럭저럭 웃긴 긁기. `attacker.tone` 대로 말했으면 여기부터',
+      STRONG: '`defender.weakPoints`·`defender.hates` 중 하나를 정확히 찌르거나 비유가 아주 재치 있음',
     },
   },
   animation: {

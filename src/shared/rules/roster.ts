@@ -15,6 +15,17 @@ export interface RosterEntry {
   /** 말이 안 떠오를 때 누르는 추천 한 마디 2개. */
   suggestedRoasts: [{ label: string; text: string; animation: WeaponProfile['techniques'][0]['animation'] }, { label: string; text: string; animation: WeaponProfile['techniques'][0]['animation'] }]
   visualTag: WeaponProfile['visualTag']
+  /** 말맛. 판정은 '이 사람 말투답게 긁었는지'를 보고, 해설은 이 말투를 살짝 흉내낸다. 숫자에는 영향 없음. */
+  voice: CharacterVoice
+}
+
+export interface CharacterVoice {
+  /** 말투 한 줄. */
+  tone: string
+  /** 입에 달고 사는 말 2개. */
+  catchphrases: [string, string]
+  /** 들으면 발끈하는 것 2개. 약점(weakPoints)과 달리 피해를 올리진 않고, 판정 맥락에만 쓴다. */
+  hates: [string, string]
 }
 
 export const ROSTER: Record<CharacterId, RosterEntry> = {
@@ -28,6 +39,11 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '국자 후려치기', text: '숙제는 했냐? 국자로 등짝 스매싱 들어간다', animation: 'DASH' },
     ],
     visualTag: 'HEAVY',
+    voice: {
+      tone: '반말 호통. 문장 끝에 "이놈아", "어이구" 를 붙이고 국밥·장사 비유로 후려친다',
+      catchphrases: ['어이구 이놈아', '밥은 먹고 다니냐'],
+      hates: ['국밥이 짜다는 소리', '할머니 폰 못 쓴다는 놀림'],
+    },
   },
   jaemmin: {
     name: '이잼민',
@@ -39,10 +55,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '키보드 연타', text: '할머니 키오스크 앞에서 10분 서 있던 거 다 봤음', animation: 'PROJECTILE' },
     ],
     visualTag: 'ELECTRIC',
+    voice: {
+      tone: '초성·ㅋㅋ 섞인 짧은 채팅체. "응? 아닌데?" 로 받아치고 게임·유튜브 비유를 쓴다',
+      catchphrases: ['응? 아닌데?', 'ㅋㅋ 개웃기네'],
+      hates: ['애 취급', '게임 실력 무시'],
+    },
   },
 }
 
 export const rosterDescription = (id: CharacterId | null | undefined): string => (id ? ROSTER[id].description : '')
+
+/** 출연진이 아닌 자유 입력 무기에는 말맛이 없다. */
+export const rosterVoice = (id: CharacterId | null | undefined): CharacterVoice | null => (id ? ROSTER[id].voice : null)
 
 export const DEFAULT_CHARACTER_FOR_SLOT: Record<PlayerSlot, CharacterId> = { A: 'grandma', B: 'jaemmin' }
 
