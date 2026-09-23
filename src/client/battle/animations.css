@@ -1,0 +1,139 @@
+/* ── 무대 ─────────────────────────────────────────────── */
+.arena {
+  --stage-h: min(100svh, 62vw);
+  position: relative;
+  width: 100%;
+  height: var(--stage-h);
+  overflow: hidden;
+  background:
+    url('/assets/arena-bg.png') center / cover no-repeat,
+    radial-gradient(ellipse at 50% 80%, #3a2f4a 0%, #14111c 60%, #08060d 100%);
+  color: #fff;
+  font-family: var(--sans);
+  user-select: none;
+}
+.arena.is-shaking { animation: arena-shake var(--shake-ms, 250ms) ease-out 1; }
+@keyframes arena-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(calc(var(--shake-px) * -1), calc(var(--shake-px) * 0.6)); }
+  40% { transform: translate(var(--shake-px), calc(var(--shake-px) * -0.6)); }
+  60% { transform: translate(calc(var(--shake-px) * -0.7), 0); }
+  80% { transform: translate(calc(var(--shake-px) * 0.5), calc(var(--shake-px) * 0.3)); }
+}
+.arena__floor {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 12%;
+  background: linear-gradient(to top, rgba(0,0,0,.55), transparent);
+}
+
+/* ── 캐릭터 ───────────────────────────────────────────── */
+.char {
+  position: absolute;
+  bottom: 6%;
+  height: 56%;
+  aspect-ratio: 1;
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+  filter: drop-shadow(0 18px 14px rgba(0,0,0,.45));
+}
+.char--left  { left: 6%; }
+.char--right { right: 6%; transform: scaleX(-1); }
+.char img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.char--left.is-shifted  { transform: translateX(calc(var(--shift-x) * -1px)); }
+.char--right.is-shifted { transform: scaleX(-1) translateX(calc(var(--shift-x) * 1px)); }
+.char--left.is-lunging  { transform: translateX(14%); }
+.char--right.is-lunging { transform: scaleX(-1) translateX(14%); }
+.char.is-silhouette img { filter: brightness(0) opacity(.35); }
+.char.is-flash img { animation: hit-flash 220ms steps(2, end) 1; }
+@keyframes hit-flash { 50% { filter: brightness(2.2) saturate(0) sepia(1) hue-rotate(-40deg); } }
+
+/* ── 무기 (소환수) ─────────────────────────────────────── */
+.weapon {
+  position: absolute;
+  bottom: 44%;
+  height: 18%;
+  aspect-ratio: 1;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
+}
+.weapon--left  { left: 24%; }
+.weapon--right { right: 24%; }
+.weapon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.weapon--float  { animation: weapon-float 2.4s ease-in-out infinite; }
+.weapon--windup { animation: weapon-windup 300ms ease-in 1 forwards; }
+.weapon--return { animation: weapon-return 600ms ease-out 1 forwards; }
+.weapon--hidden { opacity: 0; }
+@keyframes weapon-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes weapon-windup {
+  0% { transform: scale(1); }
+  60% { transform: scale(1.35) rotate(-6deg); }
+  80% { transform: scale(1.3) rotate(6deg); }
+  100% { transform: scale(1.3) rotate(0); }
+}
+@keyframes weapon-return { from { opacity: 0; transform: translateX(var(--travel)) scale(.6); } to { opacity: 1; transform: none; } }
+
+/* 이동: --travel 은 상대 쪽으로의 거리(px, 방향 포함) */
+.weapon--travel.anim-DASH       { animation: travel-dash var(--travel-ms) cubic-bezier(.7,0,.9,.4) 1 forwards; }
+.weapon--travel.anim-PROJECTILE { animation: travel-arc  var(--travel-ms) ease-in 1 forwards; }
+.weapon--travel.anim-SHOCKWAVE  { animation: travel-pulse var(--travel-ms) ease-out 1 forwards; }
+.weapon--travel.anim-PSYCHIC    { animation: travel-psychic var(--travel-ms) ease-in-out 1 forwards; }
+.weapon--travel.is-miss.anim-DASH,
+.weapon--travel.is-miss.anim-PROJECTILE { animation-name: travel-miss; }
+@keyframes travel-dash { to { transform: translateX(var(--travel)) scale(1.3); } }
+@keyframes travel-arc {
+  0%   { transform: translate(0, 0) scale(1.3); }
+  50%  { transform: translate(calc(var(--travel) * .5), -22svh) scale(1.35) rotate(180deg); }
+  100% { transform: translate(var(--travel), 0) scale(1.3) rotate(360deg); }
+}
+@keyframes travel-pulse { 0% { transform: scale(1.3); } 100% { transform: scale(1.3) translateY(10%); } }
+@keyframes travel-psychic {
+  0% { transform: scale(1.3); filter: blur(0); opacity: 1; }
+  50% { transform: translateX(calc(var(--travel) * .5)) scale(1.6); filter: blur(3px); opacity: .6; }
+  100% { transform: translateX(var(--travel)) scale(1.3); filter: blur(0); opacity: .9; }
+}
+@keyframes travel-miss { to { transform: translateX(calc(var(--travel) * 1.6)) scale(1.3) rotate(20deg); opacity: 0; } }
+.weapon.is-frozen { animation-play-state: paused; }
+
+/* 충격파 링 */
+.shockwave {
+  position: absolute; bottom: 4%; width: 12%; aspect-ratio: 3 / 1;
+  border: 4px solid rgba(255,255,255,.9); border-radius: 50%;
+  animation: shock var(--travel-ms) ease-out 1 forwards; pointer-events: none;
+}
+.shockwave--left  { left: 20%; }
+.shockwave--right { right: 20%; }
+@keyframes shock { to { transform: scale(7); opacity: 0; } }
+
+/* PSYCHIC 노이즈 */
+.psychic-noise {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, transparent 2px 5px);
+  animation: noise var(--travel-ms) steps(8) 1 forwards; mix-blend-mode: overlay;
+}
+@keyframes noise { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
+
+/* ── 효과 글씨 ───────────────────────────────────────── */
+.fx { position: absolute; pointer-events: none; font-weight: 900; letter-spacing: -.02em; text-shadow: 0 0 6px #000, 3px 3px 0 #000, -2px -2px 0 #000; }
+.fx--name {
+  left: 50%; top: 26%; transform: translateX(-50%);
+  font-size: clamp(22px, 5.2vw, 64px); color: #ffe259;
+  animation: name-in 400ms cubic-bezier(.2,1.4,.4,1) 1 forwards;
+}
+@keyframes name-in { 0% { opacity: 0; transform: translateX(-50%) scale(.4); } 60% { transform: translateX(-50%) scale(1.12); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
+.fx--label { top: 30%; font-size: clamp(28px, 7vw, 92px); color: #ff5a3c; transform: rotate(-8deg); animation: pop 700ms cubic-bezier(.2,1.6,.4,1) 1 forwards; }
+.fx--label.is-big { font-size: clamp(36px, 9vw, 120px); color: #ff3b1f; }
+.fx--label.is-soft { color: #8fd3ff; font-size: clamp(22px, 4.5vw, 60px); }
+.fx--label.is-miss { color: #cfd8e3; font-size: clamp(22px, 4.5vw, 60px); transform: rotate(6deg); }
+.fx--label.fx--on-left  { left: 14%; }
+.fx--label.fx--on-right { right: 14%; }
+@keyframes pop { 0% { opacity: 0; scale: .3; } 55% { opacity: 1; scale: 1.15; } 100% { opacity: 1; scale: 1; } }
+.fx--damage { top: 46%; font-size: clamp(24px, 5vw, 64px); color: #fff; animation: dmg 700ms ease-out 1 forwards; }
+.fx--damage.is-big { color: #ffb3a7; font-size: clamp(30px, 6.5vw, 84px); }
+.fx--damage.fx--on-left  { left: 20%; }
+.fx--damage.fx--on-right { right: 20%; }
+@keyframes dmg { 0% { opacity: 0; transform: translateY(20px) scale(.6); } 30% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 1; transform: translateY(-24px) scale(1); } }
+
+/* ── 동작 줄이기 ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .weapon--travel, .weapon--windup, .weapon--float, .char, .arena.is-shaking { animation: none !important; transition: none !important; }
+  .weapon--travel { opacity: 0; transition: opacity 200ms !important; }
+}

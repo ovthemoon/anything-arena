@@ -1,0 +1,92 @@
+/* ── 상단 HUD ─────────────────────────────────────────── */
+.hud { position: absolute; top: 0; left: 0; right: 0; padding: 1.2% 1.6%; display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.2%; align-items: start; z-index: 5; }
+.hud__side { display: flex; gap: .8%; align-items: flex-start; }
+.hud__side--right { flex-direction: row-reverse; text-align: right; }
+.portrait { width: clamp(44px, 6.5vw, 96px); aspect-ratio: 1; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.5); background: #222 no-repeat; flex: none; }
+.portrait.is-empty { background: #333; opacity: .5; }
+.hud__col { flex: 1; min-width: 0; }
+.hud__name { font-weight: 900; font-size: clamp(14px, 1.9vw, 26px); text-shadow: 2px 2px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud__tag { font-size: clamp(11px, 1.2vw, 16px); opacity: .85; text-shadow: 1px 1px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hpbar { height: clamp(12px, 1.6vw, 22px); background: #1c1c24; border: 2px solid #fff; border-radius: 6px; overflow: hidden; margin: .3em 0; box-shadow: inset 0 0 0 2px #000; }
+.hpbar__fill { height: 100%; background: linear-gradient(#7CFC5E, #2fbf3a); transition: width 700ms cubic-bezier(.2,.8,.2,1); }
+.hpbar__fill.is-low { background: linear-gradient(#ff8a65, #e53935); }
+.hud__side--right .hpbar__fill { margin-left: auto; }
+.hud__meta { display: flex; gap: .5em; align-items: center; font-size: clamp(11px, 1.2vw, 16px); }
+.hud__side--right .hud__meta { justify-content: flex-end; }
+.cards { display: inline-flex; gap: 3px; }
+.card { width: .8em; height: 1.1em; border-radius: 2px; background: #444; border: 1px solid #000; }
+.card.is-on { background: #ffd400; }
+.hud__center { text-align: center; padding-top: .2em; }
+.hud__round { font-size: clamp(11px, 1.2vw, 16px); opacity: .85; text-shadow: 1px 1px 0 #000; }
+.hud__timer { font-weight: 900; font-size: clamp(24px, 3.6vw, 52px); line-height: 1; background: #1c1c24; border: 3px solid #fff; border-radius: 10px; padding: .1em .35em; min-width: 2.2em; text-shadow: 2px 2px 0 #000; }
+.hud__timer.is-urgent { color: #ff5a3c; }
+.hud__title { font-weight: 900; color: #ffe259; text-shadow: 2px 2px 0 #000; font-size: clamp(12px, 1.5vw, 20px); margin-top: .3em; }
+
+/* ── 하단 패널 ───────────────────────────────────────── */
+.panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; background: linear-gradient(to top, rgba(10,8,18,.96) 70%, rgba(10,8,18,0)); padding: 2.4% 2% 1.4%; display: grid; gap: .6em; transition: transform 300ms ease, opacity 300ms ease; }
+.panel.is-collapsed { transform: translateY(70%); opacity: .0; pointer-events: none; }
+.commentary { text-align: center; font-size: clamp(13px, 1.6vw, 22px); font-weight: 700; text-shadow: 1px 1px 0 #000; min-height: 1.4em; }
+.commentary__icon { margin-right: .4em; opacity: .8; }
+.techs { display: grid; grid-template-columns: 1fr 1fr; gap: .6em; }
+.tech { background: #1c1c24; border: 2px solid #fff; border-radius: 10px; color: #fff; font-weight: 800; font-size: clamp(13px, 1.5vw, 20px); padding: .5em .8em; cursor: pointer; }
+.tech:hover:not(:disabled) { background: #2b2b38; }
+.tech:disabled { opacity: .4; cursor: default; }
+.freeform { display: grid; grid-template-columns: 1fr auto; gap: .6em; }
+.freeform input { font: inherit; font-size: clamp(13px, 1.5vw, 20px); padding: .55em .8em; border-radius: 10px; border: 2px solid #fff; background: #f4f3ec; color: #111; min-width: 0; }
+.freeform input:disabled { background: #444; color: #bbb; }
+.attack-btn { background: #ffd400; color: #111; border: 3px solid #111; border-radius: 10px; font-weight: 900; font-size: clamp(14px, 1.7vw, 22px); padding: .4em 1.2em; cursor: pointer; }
+.attack-btn:disabled { opacity: .45; cursor: default; }
+.panel__note { text-align: center; font-size: clamp(11px, 1.2vw, 15px); color: #ffd400; min-height: 1.2em; }
+.panel__note.is-error { color: #ff8a65; }
+.panel__count { color: #aaa; font-size: .8em; margin-left: .4em; }
+
+/* ── 경고 카드 오버레이 ──────────────────────────────── */
+.foul { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; pointer-events: none; }
+.foul__card { width: clamp(90px, 14vw, 200px); aspect-ratio: 2/3; background: #ffd400; border: 4px solid #111; border-radius: 10px; box-shadow: 0 20px 40px rgba(0,0,0,.6); animation: card-drop 500ms cubic-bezier(.2,1.4,.4,1) 1 forwards; }
+.foul__card.is-red { background: #ff3b1f; }
+.foul__text { margin-top: 1em; font-weight: 900; font-size: clamp(14px, 2vw, 28px); text-shadow: 2px 2px 0 #000; text-align: center; animation: pop 500ms 1; }
+@keyframes card-drop { from { transform: translateY(-120%) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast { position: absolute; left: 50%; top: 16%; transform: translateX(-50%); z-index: 9; background: rgba(0,0,0,.8); color: #fff; padding: .5em 1em; border-radius: 8px; font-size: clamp(12px, 1.3vw, 17px); pointer-events: none; }
+
+/* ── 에셋 연결 ───────────────────────────────────────── */
+.hud__logo { display: block; width: clamp(110px, 16vw, 240px); margin: .2em auto 0; filter: drop-shadow(0 3px 0 #000); }
+.btn, .attack-btn, .tech {
+  background: url('/assets/button.png') center / 100% 100% no-repeat;
+  border: none; color: #1a1408; text-shadow: 0 1px 0 rgba(255,255,255,.5); padding-inline: 1.6em; min-height: 2.6em;
+}
+.btn--ghost { background: #1c1c24; color: #fff; border: 2px solid #fff; text-shadow: none; }
+.tech { color: #1a1408; }
+.tech:hover:not(:disabled), .btn:hover:not(:disabled), .attack-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.tech:disabled, .btn:disabled, .attack-btn:disabled { filter: grayscale(.6); opacity: .55; }
+.hit-burst {
+  position: absolute; top: 22%; width: 34%; aspect-ratio: 1; pointer-events: none; z-index: 4;
+  background: url('/assets/hit-burst.png') center / contain no-repeat;
+  animation: burst 700ms cubic-bezier(.2,1.5,.4,1) 1 forwards;
+}
+.hit-burst--left  { left: 4%; }
+.hit-burst--right { right: 4%; transform: scaleX(-1); }
+.hit-burst.is-big { width: 46%; top: 14%; }
+@keyframes burst { 0% { opacity: 0; scale: .3; } 40% { opacity: 1; scale: 1.1; } 100% { opacity: 0; scale: 1.25; } }
+.vs { position: absolute; left: 50%; top: 34%; transform: translateX(-50%); width: clamp(90px, 16vw, 220px); z-index: 4; pointer-events: none; animation: pop 600ms cubic-bezier(.2,1.6,.4,1) 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+.start-logo { width: min(560px, 90vw); filter: drop-shadow(0 6px 0 #000); }
+
+/* ── 세로 화면(휴대폰) ───────────────────────────────── */
+@media (orientation: portrait) {
+  .arena {
+    height: 100svh;
+    background: url('/assets/mobile-bg.png') center / cover no-repeat, #0b1230;
+  }
+  .char { height: 32%; bottom: 40%; }
+  .weapon { height: 12%; bottom: 62%; }
+  .weapon--left { left: 12%; } .weapon--right { right: 12%; }
+  .char--left { left: 2%; } .char--right { right: 2%; }
+  .hit-burst { top: 30%; }
+  .fx--name { top: 22%; } .fx--label { top: 32%; } .fx--damage { top: 44%; }
+  .hud { grid-template-columns: 1fr auto 1fr; }
+  .hud__logo { width: 96px; }
+  .subtitle.is-raised { bottom: 36%; }
+  .panel { padding-bottom: max(1.4%, env(safe-area-inset-bottom)); }
+  .lobby__panel { bottom: 2%; width: 94%; }
+  .vs { top: 28%; }
+  .result__banner { top: 14%; }
+}

@@ -1,0 +1,46 @@
+.screen { min-height: 100svh; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 30%, #2b2140 0%, #14111c 55%, #08060d 100%); color: #fff; font-family: var(--sans); padding: 16px; box-sizing: border-box; }
+.screen__box { width: min(720px, 100%); text-align: center; display: grid; gap: 1em; }
+.screen h1 { font-size: clamp(28px, 6vw, 56px); color: #ffe259; text-shadow: 3px 3px 0 #000; margin: 0; line-height: 1.1; }
+.screen p { margin: 0; color: #cfc8dc; }
+.btn { background: #ffd400; color: #111; border: 3px solid #111; border-radius: 12px; font-weight: 900; font-size: clamp(16px, 2vw, 22px); padding: .6em 1.4em; cursor: pointer; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn--ghost { background: #1c1c24; color: #fff; border-color: #fff; }
+.row { display: flex; gap: .6em; justify-content: center; flex-wrap: wrap; align-items: center; }
+.input { font: inherit; padding: .55em .8em; border-radius: 10px; border: 2px solid #fff; background: #f4f3ec; color: #111; min-width: 0; }
+.err { color: #ff8a65; }
+.muted { color: #9a93a8; font-size: .9em; }
+
+/* 대기실 */
+.lobby { position: relative; }
+.lobby__seats { position: absolute; inset: 0; }
+.lobby__panel { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); width: min(560px, 92%); background: rgba(10,8,18,.92); border: 2px solid #fff; border-radius: 14px; padding: 1em; display: grid; gap: .7em; z-index: 6; }
+.roster { display: flex; gap: .6em; justify-content: center; }
+.roster__pick { background: none; border: 3px solid transparent; border-radius: 14px; padding: 4px; cursor: pointer; color: #fff; font-weight: 800; font-size: .85em; display: grid; gap: 2px; justify-items: center; }
+.roster__pick.is-on { border-color: #ffd400; background: rgba(255,212,0,.12); }
+.roster__pick .portrait { width: clamp(56px, 8vw, 88px); }
+.lobby__form { display: grid; gap: .5em; }
+.lobby__form .input { width: 100%; box-sizing: border-box; }
+.wcard { background: #1c1c24; border: 2px solid #fff; border-radius: 12px; padding: .8em 1em; text-align: left; display: grid; gap: .3em; font-size: .92em; }
+.wcard__name { font-weight: 900; font-size: 1.2em; color: #ffe259; }
+.wcard__row { display: flex; gap: .5em; flex-wrap: wrap; }
+.wcard__chip { background: #2b2b38; border-radius: 999px; padding: .1em .6em; font-size: .85em; }
+.wcard__chip.is-weak { background: #4a2020; }
+.wcard--flip { animation: flip 500ms ease-out 1; }
+@keyframes flip { from { transform: rotateY(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.entering { display: grid; gap: .4em; place-items: center; padding: .6em; }
+.spinner { width: 28px; height: 28px; border: 4px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.qr { background: #fff; border-radius: 10px; padding: 6px; width: 140px; height: 140px; }
+.seat-label { position: absolute; bottom: 3%; font-weight: 900; text-shadow: 2px 2px 0 #000; font-size: clamp(13px, 1.8vw, 22px); z-index: 4; }
+.seat-label--left { left: 8%; }
+.seat-label--right { right: 8%; }
+
+/* 자막 */
+.subtitle { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7; background: rgba(10,8,18,.85); border: 2px solid #fff; border-radius: 10px; padding: .4em 1em; font-weight: 800; font-size: clamp(13px, 1.7vw, 22px); text-shadow: 1px 1px 0 #000; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.subtitle.is-raised { bottom: 30%; }
+
+/* 결과 */
+.result__banner { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 7; text-align: center; }
+.result__title { font-size: clamp(32px, 8vw, 96px); font-weight: 900; color: #ffe259; text-shadow: 4px 4px 0 #000; line-height: 1; animation: pop 600ms cubic-bezier(.2,1.6,.4,1) 1; }
+.result__sub { margin-top: .4em; font-size: clamp(14px, 2vw, 24px); text-shadow: 2px 2px 0 #000; }
+.result__panel { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7; background: rgba(10,8,18,.92); border: 2px solid #fff; border-radius: 14px; padding: .8em 1.2em; display: grid; gap: .5em; text-align: center; width: min(520px, 92%); }
