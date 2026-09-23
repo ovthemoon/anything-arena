@@ -14,7 +14,7 @@ export interface Character {
 
 export const ROSTER: readonly Character[] = [
   { id: 'grandma', name: '욕쟁이 할머니', blurb: '순대국밥 20년차 욕쟁이 할머니', portrait: { x: 58, y: 18, zoom: 2.6 } },
-  { id: 'jaemmin', name: '이잼민', blurb: '내 나이 15 이잼민', portrait: { x: 56, y: 14, zoom: 2.6 } },
+  { id: 'jaemmin', name: '이잼민', blurb: '내 나이 15 이잼민', portrait: { x: 44, y: 14, zoom: 2.6 } },
   { id: 'daeri', name: '김대리', blurb: '퇴근 1분 전 김대리', portrait: { x: 52, y: 16, zoom: 2.6 } },
   { id: 'alba', name: '편의점 알바', blurb: '야간 300일차 편의점 알바', portrait: { x: 54, y: 18, zoom: 2.6 } },
   { id: 'chongmu', name: '산악회 총무', blurb: '단톡방 지배자 산악회 총무', portrait: { x: 47, y: 23, zoom: 2.6 } },
