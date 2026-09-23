@@ -7,7 +7,7 @@ const jsonResponse = (body: unknown) => new Response(JSON.stringify(body), { sta
 const fullAnswers = {
   answers: {
     moderation: { choice: 'ALLOW' },
-    validity: { choice: 'VALID' },
+    attackKind: { choice: 'ROAST' },
     effectiveness: { choice: 'STRONG' },
     animation: { choice: 'DASH' },
     reasonCode: { choice: 'WEAKNESS_MATCH' },
@@ -48,6 +48,22 @@ describe('judgeWithJev', () => {
     expect(body.state.defender.action).toBeUndefined()
     expect(body.state.attacker.action).toBeUndefined()
     expect(body.state.action).toBe(req.actionText)
+  })
+
+  test('GENERIC_VIOLENCE attack kind forces MISS with OFF_THEME regardless of effectiveness', async () => {
+    const violent = { answers: { ...fullAnswers.answers, attackKind: { choice: 'GENERIC_VIOLENCE' }, effectiveness: { choice: 'STRONG' } } }
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(violent))
+    const result = await judgeWithJev({ apiKey: 'k', model: 'jev-latest', fetchImpl, timeoutMs: 1000 }, req)
+    expect(result.effectiveness).toBe('MISS')
+    expect(result.reasonCode).toBe('OFF_THEME')
+    expect(result.validity).toBe('VALID')
+  })
+
+  test('SYSTEM_INSTRUCTION attack kind maps to validity SYSTEM_INSTRUCTION', async () => {
+    const sys = { answers: { ...fullAnswers.answers, attackKind: { choice: 'SYSTEM_INSTRUCTION' } } }
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(sys))
+    const result = await judgeWithJev({ apiKey: 'k', model: 'jev-latest', fetchImpl, timeoutMs: 1000 }, req)
+    expect(result.validity).toBe('SYSTEM_INSTRUCTION')
   })
 
   test('moderation FOUL regardless of other answers still maps to FOUL', async () => {

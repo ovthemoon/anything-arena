@@ -4,6 +4,8 @@ import QRCode from 'qrcode'
 import { useMatch } from '../state/useMatch'
 import { HpBar } from '../battle/HpBar'
 import { LIMITS, countChars } from '../../shared/rules/limits'
+import { ROSTER } from '../../shared/rules/roster'
+import type { CharacterId } from '../../shared/schemas/enums'
 import { createBrowserAudioManager } from '../audio/AudioManager'
 import type { AttackEvent } from '../../shared/schemas/match'
 import type { PlayerSlot } from '../../shared/schemas/enums'
@@ -245,6 +247,16 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
     })
   }
 
+  /** 긁기 배틀: 출연진만 고른다. 무기는 라운드마다 입력하는 한 마디. */
+  const selectCharacter = (id: CharacterId) => {
+    const name = ROSTER[id].name
+    send({
+      type: 'weapon_submit',
+      requestId: newId(),
+      weapon: { nickname: nickname || name, characterId: id, character: name, weaponName: name, description: '' },
+    })
+  }
+
   const submitReady = () => {
     if (!match) return
     send({ type: 'ready', matchId: match.matchId })
@@ -282,17 +294,28 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
         <section>
           <h2>로비</h2>
           <div>
+            <label>
+              닉네임 ({LIMITS.NICKNAME - countChars(nickname)}자 남음)
+              <input value={nickname} onChange={(e) => setNickname(e.target.value)} />
+            </label>
+          </div>
+          <h3>캐릭터 고르기</h3>
+          <div>
+            {(Object.keys(ROSTER) as CharacterId[]).map((id) => (
+              <button key={id} type="button" onClick={() => selectCharacter(id)} style={{ fontSize: 18, margin: 4 }}>
+                {ROSTER[id].name}
+              </button>
+            ))}
+          </div>
+          <p style={{ opacity: 0.7 }}>무기는 미리 안 정합니다. 라운드마다 한 마디로 긁으세요.</p>
+          <details>
+            <summary>직접 무기 만들기 (구버전)</summary>
+          <div>
             {PRESET_CHARACTERS.map((preset) => (
               <button key={preset.weaponName} type="button" onClick={() => applyPreset(preset)}>
                 {preset.weaponName}
               </button>
             ))}
-          </div>
-          <div>
-            <label>
-              닉네임 ({LIMITS.NICKNAME - countChars(nickname)}자 남음)
-              <input value={nickname} onChange={(e) => setNickname(e.target.value)} />
-            </label>
           </div>
           <div>
             <label>
@@ -315,7 +338,8 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
           <button type="button" onClick={submitWeapon}>
             무기 만들기
           </button>
-          <button type="button" onClick={submitReady}>
+          </details>
+          <button type="button" onClick={submitReady} style={{ fontSize: 20, marginTop: 8 }}>
             준비
           </button>
 
@@ -335,19 +359,27 @@ function PlayView({ state, send }: { state: ClientState; send: (message: ClientM
           <h2>전투</h2>
           <HpBar label="나" hp={me?.hp ?? 0} />
           <HpBar label="상대" hp={opponent?.hp ?? 0} />
+          <p style={{ opacity: 0.8 }}>상대 아픈 곳: {opponent?.weapon?.weakness ?? '-'}</p>
           <div>
+            <input
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+              disabled={freeTextDisabled}
+              placeholder="한 마디로 긁어라 (뻔한 칼·주먹은 0점)"
+              style={{ width: '100%', fontSize: 18, padding: 8 }}
+            />
+            <span>{LIMITS.ACTION_TEXT - countChars(freeText)}자 남음</span>
+            <button type="button" onClick={submitFreeText} disabled={freeTextDisabled || freeTextInvalid} style={{ fontSize: 18 }}>
+              제출
+            </button>
+          </div>
+          <div style={{ marginTop: 6 }}>
+            말이 안 떠오르면:
             {me?.weapon?.techniques.map((t) => (
-              <button key={t.id} type="button" onClick={() => submitTechnique(t.id)}>
+              <button key={t.id} type="button" onClick={() => submitTechnique(t.id)} title={t.actionText}>
                 {t.name}
               </button>
             ))}
-          </div>
-          <div>
-            <input value={freeText} onChange={(e) => setFreeText(e.target.value)} disabled={freeTextDisabled} />
-            <span>{LIMITS.ACTION_TEXT - countChars(freeText)}자 남음</span>
-            <button type="button" onClick={submitFreeText} disabled={freeTextDisabled || freeTextInvalid}>
-              제출
-            </button>
           </div>
           <div>내 상태: {me?.actionStatus ?? '-'}</div>
           <div>상대 준비: {opponent?.ready ? 'Y' : 'N'}</div>

@@ -65,15 +65,14 @@ const send = (ws, m) => ws.send(JSON.stringify(m))
 const snap = (await waitFor((e) => e.name === 'A' && e.m.type === 'room_snapshot')).m
 const matchId = snap.state.matchId
 
-send(a, { type: 'weapon_submit', requestId: 'wa', weapon: { nickname: '할머니', characterId: 'grandma', character: '순대국밥 20년차 욕쟁이 할머니', weaponName: '국자', description: '국물 회오리를 일으킨다' } })
-send(b, { type: 'weapon_submit', requestId: 'wb', weapon: { nickname: '재민', characterId: 'jaemmin', character: '내 나이 15 이잼민', weaponName: '응? 키보드', description: '말대꾸로 방패를 만든다' } })
+send(a, { type: 'weapon_submit', requestId: 'wa', weapon: { nickname: '할머니', characterId: 'grandma', character: '', weaponName: '욕쟁이 할머니', description: '' } })
+send(b, { type: 'weapon_submit', requestId: 'wb', weapon: { nickname: '재민', characterId: 'jaemmin', character: '', weaponName: '이잼민', description: '' } })
 await waitFor((e) => e.name === 'screen' && e.m.type === 'room_snapshot' && e.m.state.players.A.weapon && e.m.state.players.B.weapon, 30000)
 send(a, { type: 'ready', matchId }); send(b, { type: 'ready', matchId })
 const started = (await waitFor((e) => e.name === 'screen' && e.m.type === 'round_started')).m
 const latest = [...events].reverse().find((e) => e.name === 'screen' && e.m.type === 'room_snapshot').m.state
-const techA = latest.players.A.weapon.techniques[0].id
-send(a, { type: 'action_submit', matchId, roundId: started.roundId, actionId: 'a1', techniqueId: techA })
-send(b, { type: 'action_submit', matchId, roundId: started.roundId, actionId: 'b1', text: `${latest.players.A.weapon.weakness}을 이용해 상대의 약점을 정확히 찌른다` })
+send(a, { type: 'action_submit', matchId, roundId: started.roundId, actionId: 'a1', text: '너 배터리 1퍼센트 핸드폰이냐? 엄마가 부르면 바로 꺼지게' })
+send(b, { type: 'action_submit', matchId, roundId: started.roundId, actionId: 'b1', text: '장미칼로 찌른다' })
 await waitFor((e) => e.name === 'screen' && e.m.type === 'round_resolved', 25000)
 await new Promise((r) => setTimeout(r, 12000))
 for (const c of commentaries) {

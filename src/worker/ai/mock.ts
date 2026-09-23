@@ -4,6 +4,8 @@ import { AnimationType, VisualTag } from '../../shared/schemas/enums'
 
 const SYSTEM_INSTRUCTION_PATTERN = /(시스템|프롬프트|규칙|hp|체력).*(무시|바꿔|바꾸|0으로|조작)/i
 const FOUL_PATTERN = /(니\s*엄마|느금|씨\s*발|병신)/
+/** 뻔한 실제 무기·폭력 묘사 → MISS (피해 0). */
+const GENERIC_VIOLENCE_PATTERN = /(칼|총|주먹|발차기|찌른다|찔러|벤다|베어|쏜다|쏴|때린다|패버|죽인다|죽여)/
 
 const hash = (s: string): number => Array.from(s).reduce((h, c) => (h * 31 + (c.codePointAt(0) ?? 0)) >>> 0, 7)
 
@@ -31,7 +33,11 @@ export const createMockAdapters = (): AiAdapters => ({
     if (FOUL_PATTERN.test(actionText)) {
       return { moderation: 'FOUL', moderationReason: 'PERSONAL_ATTACK', validity: 'VALID', effectiveness: 'NORMAL', animation: 'DASH', reasonCode: 'NORMAL' }
     }
-    const strong = actionText.includes(defender.weakness)
+    if (GENERIC_VIOLENCE_PATTERN.test(actionText)) {
+      return { moderation: 'ALLOW', moderationReason: 'NORMAL', validity: 'VALID', effectiveness: 'MISS', animation: 'DASH', reasonCode: 'OFF_THEME' }
+    }
+    const weakPoints = defender.weakness.split(/[,·]/).map((w) => w.trim()).filter(Boolean)
+    const strong = weakPoints.some((w) => w && actionText.includes(w))
     return {
       moderation: 'ALLOW', moderationReason: 'NORMAL', validity: 'VALID',
       effectiveness: strong ? 'STRONG' : 'NORMAL',

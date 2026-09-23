@@ -3,6 +3,7 @@ import type { ClientMessage } from '../../../shared/schemas/messages'
 import type { WeaponProfile } from '../../../shared/schemas/weapon'
 import { WeaponProfile as WeaponProfileSchema } from '../../../shared/schemas/weapon'
 import { DEFAULT_WEAPONS } from '../../game/default-weapons'
+import { DEFAULT_CHARACTER_FOR_SLOT, characterCard } from '../../../shared/rules/roster'
 import { SLOTS, createMatch, setConnected, setReady, setWeapon } from '../../game/engine'
 import { type RoomCtx, errorMessage, withTimeout } from '../room-context'
 import { announceRoundStarted } from './round'
@@ -13,7 +14,9 @@ const WEAPON_TIMEOUT_MS = 8_000
 const IMAGE_TIMEOUT_MS = 8_000
 const CHECK_TIMEOUT_MS = 3_000
 
-const defaultWeapon = (slot: PlayerSlot): WeaponProfile => DEFAULT_WEAPONS[slot === 'A' ? 0 : 1]
+/** 긁기 배틀: 무기 대신 출연진 카드. 구버전 기본 무기는 자유 입력 경로에서만 남는다. */
+const defaultWeapon = (slot: PlayerSlot, matchId?: string): WeaponProfile =>
+  matchId ? characterCard(DEFAULT_CHARACTER_FOR_SLOT[slot], matchId) : DEFAULT_WEAPONS[slot === 'A' ? 0 : 1]
 const isPreMatch = (ctx: RoomCtx): boolean => ['LOBBY', 'PREPARING'].includes(ctx.getState().phase)
 
 const allAllowed = async (ctx: RoomCtx, texts: string[]): Promise<boolean> => {
@@ -49,6 +52,12 @@ export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: We
     ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode: 'MODERATION', canRetry: true })
     return
   }
+  // 출연진을 골랐으면 AI 생성 없이 고정 카드. 즉석 무기는 라운드마다 입력하는 한 마디다.
+  if (msg.weapon.characterId) {
+    await ctx.commit(setWeapon(ctx.getState(), slot, characterCard(msg.weapon.characterId, ctx.getState().matchId), nickname.trim()))
+    ctx.broadcastSnapshot()
+    return
+  }
   const weapon = await generateWeapon(ctx, slot, msg)
   if (!isPreMatch(ctx)) return
   await ctx.commit(setWeapon(ctx.getState(), slot, weapon, nickname.trim()))
@@ -77,7 +86,7 @@ export const handleReady = async (ctx: RoomCtx, slot: PlayerSlot, matchId: strin
   if (matchId !== s.matchId) { ctx.sendTo(slot, errorMessage('STALE_MATCH', 'matchId mismatch')); return }
   if (!isPreMatch(ctx)) return
   // 디버그 편의: 무기 없이 ready 하면 기본 무기를 쓴다.
-  const armed = s.players[slot].weapon ? s : setWeapon(s, slot, defaultWeapon(slot), `Player ${slot}`)
+  const armed = s.players[slot].weapon ? s : setWeapon(s, slot, defaultWeapon(slot, s.matchId), `Player ${slot}`)
   const next = setReady(armed, slot, now)
   await ctx.commit(next)
   if (next.phase === 'ROUND_INPUT') await announceRoundStarted(ctx, now)

@@ -16,3 +16,10 @@
 - Jev 판정: 준비 기술 NORMAL 30. 자유 문장(범위 밖 능력)은 OUTSIDE_CAPABILITY → 기본 공격 30 + fallbackReason INVALID_RESULT (PRD 6 의도대로).
 - 해설: 모델 생성 문장 2건, 정산 후 2.6초 / 4.9초 도착. TTS mp3 33KB·30KB, /api/audio 200 ✅.
 - 무기 그림: gemini-3.1-flash-lite-image, 정산 전 약 3초 내 두 장, /api/images 200 (jpeg) ✅.
+
+## 2026-09-23 — 긁기 배틀 모드 전환 (real, 로컬)
+
+- 무기 사전 생성 삭제. 출연진(할머니/이잼민) 카드 = 성격 2 + 아픈 곳 3 + 추천 한 마디 2. 라운드마다 입력한 한 마디가 즉석 무기이자 기술명.
+- 판정: attackKind(ROAST/GENERIC_VIOLENCE/OFF_TOPIC/SYSTEM_INSTRUCTION) + effectiveness(MISS/LIMITED/NORMAL/STRONG). 뻔한 실제 무기·폭력은 코드가 MISS(0) 로 강제.
+- 결과: "너 배터리 1퍼센트 핸드폰이냐? 엄마가 부르면 바로 꺼지게" → STRONG 40 (약점 '엄마' 적중). "장미칼로 찌른다" → MISS 0. 해설: "'장미칼로 찌른다'가 빗나가 관중은 잠시 어색함에 빠졌다!" ✅
+- 고친 것: 검열 질문이 허구 캐릭터 대상 만화적 폭력을 거절하던 문제 → ALLOW 후 효과에서 MISS.

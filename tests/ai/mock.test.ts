@@ -18,6 +18,10 @@ describe('mock adapters', () => {
     const r = await ai.judgeAction({ attacker: DEFAULT_WEAPONS[0], defender: DEFAULT_WEAPONS[1], actionText: `${DEFAULT_WEAPONS[1].weakness}으로 공격`, rulesetVersion: 'v0.1' })
     expect(r.effectiveness).toBe('STRONG')
   })
+  test('generic violence like 장미칼 찌르기 is a MISS with 0 damage', async () => {
+    const r = await ai.judgeAction({ attacker: DEFAULT_WEAPONS[0], defender: DEFAULT_WEAPONS[1], actionText: '장미칼로 찌른다', rulesetVersion: 'v0.1' })
+    expect(r.effectiveness).toBe('MISS')
+  })
   test('synthesize returns null (no audio in mock)', async () => {
     expect(await ai.synthesize('안녕', 'k')).toBeNull()
   })

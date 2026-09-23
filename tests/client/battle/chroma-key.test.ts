@@ -20,3 +20,24 @@ describe('keyOutGreen', () => {
     expect(Array.from(input)).toEqual([0, 255, 0, 255, 200, 30, 30, 255])
   })
 })
+
+import { alphaBounds } from '../../../src/client/battle/chroma-key'
+
+describe('alphaBounds', () => {
+  test('returns the bounding box of non-transparent pixels', () => {
+    // 4x3 image, opaque pixels at (1,1) and (2,1)
+    const w = 4
+    const h = 3
+    const data = new Uint8ClampedArray(w * h * 4)
+    const set = (x: number, y: number) => {
+      data[(y * w + x) * 4 + 3] = 255
+    }
+    set(1, 1)
+    set(2, 1)
+    expect(alphaBounds(data, w, h)).toEqual({ x: 1, y: 1, width: 2, height: 1 })
+  })
+
+  test('fully transparent image falls back to the whole canvas', () => {
+    expect(alphaBounds(new Uint8ClampedArray(2 * 2 * 4), 2, 2)).toEqual({ x: 0, y: 0, width: 2, height: 2 })
+  })
+})

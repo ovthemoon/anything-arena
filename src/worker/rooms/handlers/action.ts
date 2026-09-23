@@ -9,7 +9,12 @@ import { resolveAndAnnounce } from './round'
 type ActionSubmit = Extract<ClientMessage, { type: 'action_submit' }>
 
 const JUDGE_TIMEOUT_MS = 1_500
-const CUSTOM_LABEL = '자유 공격'
+const LABEL_MAX_CHARS = 24
+/** 긁기 배틀: 입력한 한 마디가 곧 기술명. 길면 앞부분만. */
+const customLabel = (text: string): string => {
+  const chars = Array.from(text.trim())
+  return chars.length <= LABEL_MAX_CHARS ? chars.join('') : `${chars.slice(0, LABEL_MAX_CHARS).join('')}…`
+}
 
 type JudgeOutcome = { judge: JudgeResult } | { failed: 'JUDGE_FAILED' | 'INVALID_RESULT' }
 
@@ -94,7 +99,7 @@ const handleCustom = async (ctx: RoomCtx, slot: PlayerSlot, msg: ActionSubmit, t
   }
   const action: PendingAction = judge.validity === 'SYSTEM_INSTRUCTION'
     ? fallbackAction(msg.actionId, 'SYSTEM_INSTRUCTION')
-    : { actionId: msg.actionId, label: CUSTOM_LABEL, text, judge }
+    : { actionId: msg.actionId, label: customLabel(text), text, judge }
   await accept(ctx, slot, action, Date.now())
 }
 
