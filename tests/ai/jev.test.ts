@@ -83,3 +83,26 @@ describe('checkTextWithJev', () => {
     expect(Object.keys(body.questions)).toEqual(['moderation'])
   })
 })
+
+describe('judgeWithJev character voice', () => {
+  test('sends attacker tone/catchphrases and defender hates for roster characters', async () => {
+    const { characterCard } = await import('../../src/shared/rules/roster')
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(fullAnswers))
+    const voiced = { ...req, attacker: characterCard('grandma', 'm1'), defender: characterCard('jaemmin', 'm1') }
+    await judgeWithJev({ apiKey: 'k', model: 'jev-latest', fetchImpl, timeoutMs: 1000 }, voiced)
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body)
+    expect(typeof body.state.attacker.tone).toBe('string')
+    expect(body.state.attacker.catchphrases).toHaveLength(2)
+    expect(body.state.defender.hates).toHaveLength(2)
+    // 상대의 말버릇은 판정에 필요 없다. 상대 정보는 아픈 곳만.
+    expect(body.state.defender.catchphrases).toBeUndefined()
+  })
+
+  test('omits voice fields for free-form weapons without a roster character', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(fullAnswers))
+    await judgeWithJev({ apiKey: 'k', model: 'jev-latest', fetchImpl, timeoutMs: 1000 }, req)
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body)
+    expect(body.state.attacker.tone).toBeUndefined()
+    expect(body.state.defender.hates).toBeUndefined()
+  })
+})

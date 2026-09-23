@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { LIMITS, countChars } from '../../shared/rules/limits'
+import { ROSTER as SHARED_ROSTER, type RosterEntry } from '../../shared/rules/roster'
 import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { PublicPlayer } from '../../shared/schemas/match'
 import type { WeaponProfile } from '../../shared/schemas/weapon'
@@ -8,9 +9,7 @@ import type { ClientMessage } from '../../shared/schemas/messages'
 import type { ClientState } from '../state/match-reducer'
 import { newId } from '../lib/ids'
 import { CharacterSprite } from '../battle/CharacterSprite'
-import { ROSTER, characterOf, poseUrl, type CharacterId } from '../battle/characters'
-import { WeaponSprite } from '../battle/WeaponSprite'
-import { weaponImageUrlOf } from '../battle/outcome'
+import { ROSTER, poseUrl, type Character, type CharacterId } from '../battle/characters'
 
 export interface LobbyScreenProps {
   state: ClientState
@@ -40,34 +39,85 @@ function useQrCode(url: string): string | null {
   return dataUrl
 }
 
-function WeaponCard({ weapon, className = '' }: { weapon: WeaponProfile; className?: string }) {
+/** 출연진 카드: 성격 2 · 아픈 곳 3 · 추천 한 마디 2 (긁기 배틀). */
+function CharacterCard({ card }: { card: WeaponProfile }) {
+  const weakPoints = card.weakness.split(',').map((w) => w.trim()).filter(Boolean)
   return (
-    <div className={`wcard wcard--flip ${className}`}>
-      <div className="wcard__name">{weapon.displayName}</div>
-      <div>{weapon.tagline}</div>
+    <div className="wcard wcard--flip">
+      <div className="wcard__name">{card.displayName}</div>
+      <div>{card.tagline}</div>
       <div className="wcard__row">
-        {weapon.capabilities.map((c) => (
+        {card.capabilities.map((c) => (
           <span key={c} className="wcard__chip">
             {c}
           </span>
         ))}
-        <span className="wcard__chip is-weak">약점: {weapon.weakness}</span>
+      </div>
+      <div className="wcard__row">
+        <span className="muted">내 아픈 곳</span>
+        {weakPoints.map((w) => (
+          <span key={w} className="wcard__chip is-weak">
+            {w}
+          </span>
+        ))}
+      </div>
+      <div className="muted">라운드마다 한 마디로 상대의 아픈 곳을 긁으세요. 뻔한 칼·주먹은 0점.</div>
+    </div>
+  )
+}
+
+/** 고르기 전에 이름·설명·아픈 곳을 다 보여준다. 출연진 설정이 아직 없는 캐릭터는 이름만. */
+function RosterPick({ character, isOn, disabled, onPick }: { character: Character; isOn: boolean; disabled: boolean; onPick: () => void }) {
+  const entry = SHARED_ROSTER[character.id] as RosterEntry | undefined
+  return (
+    <button type="button" className={`roster__pick${isOn ? ' is-on' : ''}`} disabled={disabled} onClick={onPick}>
+      <div
+        className="portrait"
+        style={{ backgroundImage: `url(${poseUrl(character.id, 'idle')})`, backgroundSize: `${character.portrait.zoom * 100}%`, backgroundPosition: `${character.portrait.x}% ${character.portrait.y}%` }}
+      />
+      <div className="roster__name">{character.name}</div>
+      <div className="roster__desc">{entry?.description ?? character.blurb}</div>
+      {entry && (
+        <div className="roster__weak">
+          <span className="muted">아픈 곳</span>
+          {entry.weakPoints.map((w) => (
+            <span key={w} className="wcard__chip is-weak">
+              {w}
+            </span>
+          ))}
+        </div>
+      )}
+    </button>
+  )
+}
+
+/** 좌석 위 소개 카드: 중계 화면과 휴대폰 모두에서 이름·설명·아픈 곳이 보인다. */
+function SeatCard({ card, side }: { card: WeaponProfile; side: 'left' | 'right' }) {
+  const weakPoints = card.weakness.split(',').map((w) => w.trim()).filter(Boolean)
+  return (
+    <div className={`seat-card seat-card--${side}`}>
+      <div className="seat-card__name">{card.displayName}</div>
+      <div className="seat-card__desc">{card.tagline}</div>
+      <div className="seat-card__weak">
+        <span className="muted">아픈 곳</span>
+        {weakPoints.map((w) => (
+          <span key={w} className="wcard__chip is-weak">
+            {w}
+          </span>
+        ))}
       </div>
     </div>
   )
 }
 
-/** 좌석 하나: 캐릭터·무기·이름표. 무기가 도착하면 캐릭터가 튀어오르며 "입장"하고, 중계 화면엔 무기 카드가 뒤집힌다. */
-function Seat({ player, id, side, stageWidth, isScreen }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right'; stageWidth: number; isScreen: boolean }) {
-  const label = player?.nickname ?? (player?.connected ? '무기 고르는 중' : '빈 자리')
-  const isArmed = !!player?.weapon
+function Seat({ player, id, side }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right' }) {
+  const label = player?.nickname ?? (player?.connected ? '캐릭터 고르는 중' : '빈 자리')
+  // 카드가 도착하면 캐릭터가 튀어오르며 "입장"한다 (key 로 다시 마운트)
+  const isEntered = !!player?.weapon
   return (
     <>
-      <CharacterSprite key={isArmed ? 'armed' : 'bare'} id={player?.connected ? id : null} pose="idle" side={side} isEntering={isArmed} />
-      {player?.weapon && (
-        <WeaponSprite imageUrl={weaponImageUrlOf(player.weapon)} visualTag={player.weapon.visualTag} side={side} phase="float" animation="DASH" travelMs={0} stageWidth={stageWidth} />
-      )}
-      {isScreen && player?.weapon && <WeaponCard weapon={player.weapon} className={`wcard--seat wcard--seat-${side}`} />}
+      <CharacterSprite key={isEntered ? 'entered' : 'picking'} id={player?.connected ? id : null} pose="idle" side={side} isEntering={isEntered} />
+      {player?.weapon && <SeatCard card={player.weapon} side={side} />}
       <div className={`seat-label seat-label--${side}`}>
         {label}
         {player?.ready ? ' ✓' : ''}
@@ -76,27 +126,27 @@ function Seat({ player, id, side, stageWidth, isScreen }: { player: PublicPlayer
   )
 }
 
-/** 대기실: 캐릭터 선택 → 무기 입력 → 선수 입장(설정 공개) → 준비. */
-export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacter, send, stageWidth }: LobbyScreenProps) {
+/** 대기실: 닉네임 + 캐릭터 선택 → 카드 공개 → 준비. 무기는 미리 정하지 않는다. */
+export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacter, send }: LobbyScreenProps) {
   const match = state.match
   const me = you ? match?.players[you] : undefined
   const joinUrl = `${window.location.origin}/play/${roomCode}`
   const qr = useQrCode(joinUrl)
 
   const [nickname, setNickname] = useState('')
-  const [weaponName, setWeaponName] = useState('')
-  const [description, setDescription] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   const myCharacter = you ? characterIds[you] : null
-  const canSubmit = !!myCharacter && countChars(nickname) > 0 && countChars(nickname) <= LIMITS.NICKNAME && countChars(weaponName) > 0 && countChars(weaponName) <= LIMITS.WEAPON_NAME && countChars(description) <= LIMITS.WEAPON_DESCRIPTION
+  const nickOk = countChars(nickname) <= LIMITS.NICKNAME
+  const canEnter = !!myCharacter && nickOk && !submitted
 
-  const submitWeapon = () => {
-    if (!canSubmit || !myCharacter) return
+  const enter = () => {
+    if (!myCharacter || !nickOk) return
+    const name = (SHARED_ROSTER[myCharacter] as RosterEntry | undefined)?.name ?? myCharacter
     send({
       type: 'weapon_submit',
       requestId: newId(),
-      weapon: { nickname, characterId: myCharacter, character: characterOf(myCharacter).blurb, weaponName, description },
+      weapon: { nickname: nickname.trim() || name, characterId: myCharacter, character: name, weaponName: name, description: '' },
     })
     setSubmitted(true)
   }
@@ -106,19 +156,16 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
     send({ type: 'ready', matchId: match.matchId })
   }
 
-  const isWaitingWeapon = submitted && !me?.weapon
-  const isScreen = !you
-
   return (
     <div className="lobby" style={{ position: 'absolute', inset: 0 }}>
       <div className="lobby__seats">
-        <Seat player={match?.players.A} id={characterIds.A} side="left" stageWidth={stageWidth} isScreen={isScreen} />
-        <Seat player={match?.players.B} id={characterIds.B} side="right" stageWidth={stageWidth} isScreen={isScreen} />
+        <Seat player={match?.players.A} id={characterIds.A} side="left" />
+        <Seat player={match?.players.B} id={characterIds.B} side="right" />
         <img className="vs" src="/assets/vs.png" alt="VS" />
       </div>
 
       <div className="lobby__panel">
-        {isScreen && (
+        {!you && (
           <>
             <div className="row">
               {qr && <img className="qr" src={qr} alt="참가 QR" />}
@@ -128,43 +175,28 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
                 <div className="muted">{joinUrl}</div>
               </div>
             </div>
-            <div className="muted">두 사람이 무기를 고르고 준비하면 시작합니다.</div>
+            <div className="muted">두 사람이 캐릭터를 고르고 준비하면 시작합니다.</div>
           </>
         )}
 
-        {you && !me?.weapon && !isWaitingWeapon && (
+        {you && !me?.weapon && (
           <div className="lobby__form">
             <div className="roster">
               {ROSTER.map((c) => (
-                <button key={c.id} type="button" className={`roster__pick${myCharacter === c.id ? ' is-on' : ''}`} onClick={() => onPickCharacter(c.id)}>
-                  <div
-                    className="portrait"
-                    style={{ backgroundImage: `url(${poseUrl(c.id, 'idle')})`, backgroundSize: `${c.portrait.zoom * 100}%`, backgroundPosition: `${c.portrait.x}% ${c.portrait.y}%` }}
-                  />
-                  {c.name}
-                </button>
+                <RosterPick key={c.id} character={c} isOn={myCharacter === c.id} disabled={submitted} onPick={() => onPickCharacter(c.id)} />
               ))}
             </div>
-            <input className="input" value={nickname} maxLength={LIMITS.NICKNAME * 2} placeholder={`닉네임 (${LIMITS.NICKNAME}자)`} onChange={(e) => setNickname(e.target.value)} />
-            <input className="input" value={weaponName} maxLength={LIMITS.WEAPON_NAME * 2} placeholder="무기 이름 — 아무거나! (예: 젖은 양말)" onChange={(e) => setWeaponName(e.target.value)} />
-            <input className="input" value={description} maxLength={LIMITS.WEAPON_DESCRIPTION * 2} placeholder="한 줄 설명 (선택)" onChange={(e) => setDescription(e.target.value)} />
-            {state.rejected && <div className="err">입력을 확인해 주세요. 사람과 가족은 공격하지 마세요.</div>}
-            <button type="button" className="btn" disabled={!canSubmit} onClick={submitWeapon}>
-              무기 제출
+            <input className="input" value={nickname} maxLength={LIMITS.NICKNAME * 2} placeholder={`닉네임 (${LIMITS.NICKNAME}자, 비우면 캐릭터 이름)`} onChange={(e) => setNickname(e.target.value)} disabled={submitted} />
+            {state.rejected && <div className="err">닉네임을 확인해 주세요. 사람과 가족은 공격하지 마세요.</div>}
+            <button type="button" className="btn" disabled={!canEnter} onClick={enter}>
+              {submitted ? '입장 중…' : '이 캐릭터로 입장'}
             </button>
-          </div>
-        )}
-
-        {you && isWaitingWeapon && (
-          <div className="entering">
-            <div className="spinner" />
-            <div>선수 입장 중… 무기를 분석하고 있습니다</div>
           </div>
         )}
 
         {you && me?.weapon && (
           <>
-            <WeaponCard weapon={me.weapon} />
+            <CharacterCard card={me.weapon} />
             <button type="button" className="btn" disabled={me.ready} onClick={submitReady}>
               {me.ready ? '상대를 기다리는 중…' : '준비 완료!'}
             </button>

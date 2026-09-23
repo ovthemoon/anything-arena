@@ -7,17 +7,18 @@ import type { AttackEvent, PublicMatchState, PublicPlayer, RoundResolved } from 
 import type { WeaponProfile } from '../../shared/schemas/weapon'
 
 export type PendingAction = { actionId: string; label: string; text: string; judge: JudgeResult | null; fallbackReason?: FallbackReason }
-export type EngineState = PublicMatchState & { pending: Record<PlayerSlot, PendingAction | null>; customAttempts: Record<PlayerSlot, number> }
+/** botSlot: AI 대전이면 봇이 앉은 좌석. 서버 전용, toPublic 에서 빠진다. */
+export type EngineState = PublicMatchState & { pending: Record<PlayerSlot, PendingAction | null>; customAttempts: Record<PlayerSlot, number>; botSlot: PlayerSlot | null }
 
 export const SLOTS: readonly PlayerSlot[] = ['A', 'B']
 export const other = (s: PlayerSlot): PlayerSlot => (s === 'A' ? 'B' : 'A')
 
 const emptyPlayer = (slot: PlayerSlot): PublicPlayer => ({ slot, nickname: null, characterId: null, connected: false, ready: false, weapon: null, hp: RULES.INITIAL_HP, actionStatus: 'NONE', fouls: 0, presetOnly: false })
 
-export const createMatch = (roomCode: string, matchId: string, _now: number): EngineState => ({
+export const createMatch = (roomCode: string, matchId: string, _now: number, botSlot: PlayerSlot | null = null): EngineState => ({
   roomCode, matchId, phase: 'LOBBY', roundId: 0, deadlineAt: null,
   players: { A: emptyPlayer('A'), B: emptyPlayer('B') }, history: [], winner: null, eventSeq: 0,
-  rulesetVersion: RULES.RULESET_VERSION, pending: { A: null, B: null }, customAttempts: { A: 0, B: 0 },
+  rulesetVersion: RULES.RULESET_VERSION, pending: { A: null, B: null }, customAttempts: { A: 0, B: 0 }, botSlot,
 })
 
 export const patchPlayer = (s: EngineState, slot: PlayerSlot, patch: Partial<PublicPlayer>): EngineState =>
@@ -109,6 +110,6 @@ export const resolveRound = (s: EngineState, now: number): { state: EngineState;
 }
 
 export const toPublic = (s: EngineState): PublicMatchState => {
-  const { pending: _p, customAttempts: _c, ...pub } = s
+  const { pending: _p, customAttempts: _c, botSlot: _b, ...pub } = s
   return pub
 }

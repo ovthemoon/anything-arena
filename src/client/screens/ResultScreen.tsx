@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { AttackEvent, PublicPlayer } from '../../shared/schemas/match'
 import type { ClientMessage } from '../../shared/schemas/messages'
@@ -56,12 +57,12 @@ function BestHitCard({ attack, actor }: { attack: AttackEvent; actor: PublicPlay
 
 /** 결과: 승자·패자 자세, 최고 피해 공격, 재대결. */
 export function ResultScreen({ state, you, characterIds, send }: ResultScreenProps) {
+  const [rematchSent, setRematchSent] = useState(false)
   const match = state.match
   if (!match) return null
   const winner = match.winner ?? null
   const winnerName = winner ? match.players[winner]?.nickname ?? (winner === 'A' ? '왼쪽' : '오른쪽') : null
   const best = highestDamageAttack(state)
-  const me = you ? match.players[you] : undefined
 
   return (
     <div className="arena result">
@@ -77,8 +78,16 @@ export function ResultScreen({ state, you, characterIds, send }: ResultScreenPro
 
       <div className="result__panel">
         {you ? (
-          <button type="button" className="btn" disabled={me?.ready} onClick={() => send({ type: 'rematch_ready', matchId: match.matchId })}>
-            {me?.ready ? '상대를 기다리는 중…' : '재대결!'}
+          <button
+            type="button"
+            className="btn"
+            disabled={rematchSent}
+            onClick={() => {
+              send({ type: 'rematch_ready', matchId: match.matchId })
+              setRematchSent(true)
+            }}
+          >
+            {rematchSent ? '상대를 기다리는 중…' : '재대결!'}
           </button>
         ) : (
           <div className="muted">두 사람이 재대결을 누르면 새 경기가 시작됩니다.</div>

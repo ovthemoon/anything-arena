@@ -17,10 +17,11 @@ const DO_ORIGIN = 'https://battle-room'
 const roomStub = (env: Env, code: string) => env.BATTLE_ROOM.get(env.BATTLE_ROOM.idFromName(code))
 
 /** Worker → DO 내부 호출. 클라이언트 요청을 그대로 /internal 로 보내지 않는다. */
-const callInternal = (env: Env, code: string, action: 'create' | 'join' | 'state', method = 'POST', held: 'A' | 'B' | null = null): Promise<Response> => {
+const callInternal = (env: Env, code: string, action: 'create' | 'join' | 'state', method = 'POST', held: 'A' | 'B' | null = null, bot = false): Promise<Response> => {
   const url = new URL(`${DO_ORIGIN}/internal/${action}`)
   url.searchParams.set('roomCode', code)
   if (held) url.searchParams.set('held', held)
+  if (bot) url.searchParams.set('bot', '1')
   return roomStub(env, code).fetch(new Request(url, { method, headers: { [INTERNAL_HEADER]: '1' } }))
 }
 
@@ -33,10 +34,12 @@ const withSeatCookie = async <T>(env: Env, request: Request, roomCode: string, r
   return res
 }
 
+/** `?mode=solo` 면 B 좌석에 AI 봇이 앉는다. */
 const createRoom = async (request: Request, env: Env): Promise<Response> => {
+  const isSolo = new URL(request.url).searchParams.get('mode') === 'solo'
   for (let i = 0; i < ROOM_CREATE_ATTEMPTS; i++) {
     const code = generateRoomCode()
-    const res = await callInternal(env, code, 'create')
+    const res = await callInternal(env, code, 'create', 'POST', null, isSolo)
     if (res.ok) return withSeatCookie(env, request, code, 'SCREEN', { roomCode: code, joinUrl: `${new URL(request.url).origin}/play/${code}` })
     if (res.status !== 409) return fail('Room creation failed', 500)
   }

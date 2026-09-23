@@ -18,11 +18,11 @@ export function StartScreen({ onNavigate }: { onNavigate: (path: string) => void
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const createRoom = async () => {
+  const createRoom = async (mode: 'pvp' | 'solo' = 'pvp') => {
     setError(null)
     setBusy(true)
     try {
-      const res = await postJson<{ roomCode: string; joinUrl: string }>('/api/rooms')
+      const res = await postJson<{ roomCode: string; joinUrl: string }>(mode === 'solo' ? '/api/rooms?mode=solo' : '/api/rooms')
       if (res.success && res.data) onNavigate(`/screen/${res.data.roomCode}`)
       else setError(res.error ?? '방을 만들지 못했어요. 다시 시도해 주세요.')
     } catch {
@@ -45,8 +45,11 @@ export function StartScreen({ onNavigate }: { onNavigate: (path: string) => void
         <p>무기를 가져오세요. 강한 이유는 저희가 갖다 붙입니다.</p>
         <p className="muted">예: 젖은 양말 vs 배터리 1% 스마트폰</p>
         <div className="row">
-          <button type="button" className="btn" disabled={busy} onClick={createRoom}>
+          <button type="button" className="btn" disabled={busy} onClick={() => createRoom()}>
             방 만들기 (중계 화면)
+          </button>
+          <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => createRoom('solo')}>
+            AI와 대전
           </button>
         </div>
         <form

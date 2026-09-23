@@ -13,6 +13,7 @@ import { WeaponSprite, type WeaponPhase } from '../battle/WeaponSprite'
 import { displayedHp } from '../battle/hp-display'
 import { outcomeFx, outcomeOf, weaponImageUrlOf } from '../battle/outcome'
 import { STEP_MS, buildAttackTimeline, type StepKind } from '../battle/timeline'
+import { FROZEN_ACTION } from '../../shared/rules/constants'
 import type { PlaybackState } from '../battle/usePlayback'
 import type { Pose, CharacterId } from '../battle/characters'
 import type { Prefs } from '../battle/usePrefs'
@@ -33,6 +34,10 @@ export interface BattleScreenProps {
 const sideOf = (slot: PlayerSlot): 'left' | 'right' => (slot === 'A' ? 'left' : 'right')
 
 const ACTOR_ATTACK_STEPS: readonly StepKind[] = ['windup', 'travel', 'freeze', 'result']
+
+/** 시간 초과로 아무 말도 못 한 공격. 공격 자세 없이 말풍선만 제자리에서 떤다. */
+const isFrozenAttack = (attack: AttackEvent | null): boolean => attack?.techniqueLabel === FROZEN_ACTION.label
+const FROZEN_LABEL = '얼어붙음!'
 
 /** 카메라 펀치(줌인) 배율. 맞은 쪽으로 화면이 잠깐 다가갔다 돌아온다. */
 const CAMERA_ZOOM: Record<'STRONG' | 'NORMAL' | 'LIMITED' | 'MISS', number> = { STRONG: 1.1, NORMAL: 1.06, LIMITED: 1.02, MISS: 1 }
@@ -67,6 +72,7 @@ const visualFor = (slot: PlayerSlot, pb: PlaybackState, attack: AttackEvent | nu
   if (!attack || pb.step === null) return base
   const fx = outcomeFx(outcomeOf(attack))
   if (attack.actor === slot) {
+    if (isFrozenAttack(attack)) return base
     return {
       ...base,
       pose: ACTOR_ATTACK_STEPS.includes(pb.step) ? 'attack' : 'idle',
@@ -92,18 +98,22 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
 
   const attack = playback.attack
   const outcome = attack ? outcomeOf(attack) : 'NORMAL'
-  const fx = outcomeFx(outcome)
+  const frozen = isFrozenAttack(attack)
+  const fx = frozen ? { ...outcomeFx('MISS'), label: FROZEN_LABEL, targetShift: { x: 0, y: 0 } } : outcomeFx(outcome)
   const isResult = playback.step === 'result' && !!attack
   const isFreeze = playback.step === 'freeze' && !!attack && !prefs.reducedMotion
   const isShaking = isResult && prefs.shakeOn && fx.shakePx > 0 && !prefs.reducedMotion
-  const isPunching = isResult && !prefs.reducedMotion && CAMERA_ZOOM[outcome] > 1
-  const isDashing = !!attack && attack.animation === 'DASH' && playback.step === 'travel' && outcome !== 'MISS' && !prefs.reducedMotion
+  const isPunching = isResult && !frozen && !prefs.reducedMotion && CAMERA_ZOOM[outcome] > 1
+  const isDashing = !!attack && !frozen && attack.animation === 'DASH' && playback.step === 'travel' && outcome !== 'MISS' && !prefs.reducedMotion
   const travelMs = travelMsFor(playback, prefs.reducedMotion)
+
   const me = you ? match.players[you] : undefined
+  const opponent = you ? match.players[you === 'A' ? 'B' : 'A'] : undefined
 
   const commentaryText = attack ? state.commentary[attack.eventId]?.text ?? null : null
   const showSubtitle = !!commentaryText && (playback.step === 'commentary' || playback.done)
 
+  const submitTechnique = (techniqueId: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), techniqueId })
   const submitFreeText = (text: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), text })
 
   const playersForHud = {
@@ -121,17 +131,22 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
     ['--shake-ms' as string]: `${fx.shakeMs}ms`,
     ['--zoom' as string]: String(CAMERA_ZOOM[outcome]),
   }
+  // 그림 무기일 때만 기술명 컷인. 말풍선 모드는 말풍선 자체가 기술명이다.
+  const showNameCutIn = !!attack && playback.step === 'name' && !!weaponImageUrlOf(match.players[attack.actor]?.weapon)
 
   return (
     <div className="arena">
       <div className={stageCls.join(' ')} style={stageStyle}>
         <div className="arena__floor" />
-        {isDashing && <div className={`speedlines speedlines--${sideOf(attack.actor)}`} style={{ ['--travel-ms' as string]: `${travelMs}ms` }} />}
+        {isDashing && attack && <div className={`speedlines speedlines--${sideOf(attack.actor)}`} style={{ ['--travel-ms' as string]: `${travelMs}ms` }} />}
 
         {(['A', 'B'] as const).map((slot) => {
           const player = match.players[slot]
           const v = visualFor(slot, playback, attack)
           const isActor = attack?.actor === slot
+          const hasImage = !!weaponImageUrlOf(player?.weapon)
+          // 말풍선 모드: 기술명 단계(2.2초) 동안 말풍선이 공격자 옆에 먼저 떠서 읽을 시간을 준다
+          const phase = !hasImage && isActor && playback.step === 'name' ? 'windup' : weaponPhaseFor(playback.step, isActor, playback.done)
           return (
             <div key={slot} style={{ display: 'contents' }}>
               <CharacterSprite id={characterIds[slot]} pose={v.pose} side={sideOf(slot)} shiftX={v.shiftX} isLunging={v.isLunging} isFlashing={v.isFlashing} />
@@ -140,9 +155,11 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
                   imageUrl={weaponImageUrlOf(player.weapon)}
                   visualTag={player.weapon.visualTag}
                   side={sideOf(slot)}
-                  phase={weaponPhaseFor(playback.step, isActor, playback.done)}
+                  phase={phase}
                   animation={attack && isActor ? attack.animation : 'DASH'}
-                  isMiss={isActor && outcome === 'MISS'}
+                  isMiss={isActor && outcome === 'MISS' && !frozen}
+                  isStatic={isActor && frozen}
+                  text={isActor && attack ? attack.approvedActionText || attack.techniqueLabel : null}
                   travelMs={travelMs}
                   stageWidth={stageWidth}
                 />
@@ -151,7 +168,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
           )
         })}
 
-        {attack && isResult && (
+        {attack && isResult && !frozen && (
           <Impact outcome={outcome} targetSide={targetSide} seed={(resolved?.eventSeq ?? 0) * 2 + (playback.index ?? 0)} reducedMotion={prefs.reducedMotion} />
         )}
         {attack && isResult && (
@@ -159,7 +176,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
         )}
       </div>
 
-      {attack && playback.step === 'name' && <Fx kind="name" text={attack.techniqueLabel} />}
+      {showNameCutIn && attack && <Fx kind="name" text={attack.techniqueLabel} />}
       <RoundBanner stage={isPlaying ? null : banner} roundId={match.roundId} />
 
       <Hud players={playersForHud} characterIds={characterIds} roundId={isPlaying && resolved ? resolved.roundId : match.roundId} seconds={isInputOpen ? seconds : null} />
@@ -169,11 +186,14 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
       {you && (
         <ActionPanel
           me={me}
+          opponentWeakness={opponent?.weapon?.weakness ?? null}
+          suggestionSeed={`${match.matchId}:${match.roundId}:${you}`}
           isInputOpen={isInputOpen}
           isCollapsed={isPlaying}
           commentaryText={null}
           rejected={state.rejected}
           onFreeText={submitFreeText}
+          onTechnique={submitTechnique}
         />
       )}
     </div>

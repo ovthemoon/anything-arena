@@ -7,12 +7,13 @@ import { usePlayback } from '../battle/usePlayback'
 import { usePrefs } from '../battle/usePrefs'
 import { totalMs, buildAttackTimeline } from '../battle/timeline'
 import { BattleScreen } from './BattleScreen'
+import { ResultScreen } from './ResultScreen'
 import '../battle/animations.css'
 import '../battle/ui.css'
 import './screens.css'
 
 /**
- * /demo — 서버 없이 연출만 반복 재생하는 미리보기.
+ * /demo — 서버 없이 연출만 반복 재생하는 미리보기. /demo?result 는 결과 화면.
  * 네 가지 결과(정통·일반·막아냄·빗나감)와 네 가지 이동 유형을 돌아가며 보여준다.
  */
 
@@ -28,7 +29,7 @@ const weapon = (id: string, name: string, tag: WeaponProfile['visualTag']): Weap
   displayName: name,
   tagline: `${name}의 위엄`,
   capabilities: ['휘두르기'],
-  weakness: '열',
+  weakness: '엄마·숙제·용돈, 학원·시험, 틀딱 소리',
   visualTag: tag,
   techniques: [
     { id: 't1', name: '기술 1', actionText: 'a', animation: 'DASH' },
@@ -43,7 +44,7 @@ const attack = (n: number, actor: PlayerSlot, effectiveness: Effectiveness, anim
   actor,
   target: actor === 'A' ? 'B' : 'A',
   techniqueLabel: actor === 'A' ? '국물 회오리' : '얼음 블록 투척',
-  approvedActionText: '',
+  approvedActionText: actor === 'A' ? '숙제는 했냐? 국자로 등짝 스매싱 들어간다' : '응? 할머니 그거 요즘 아무도 안 씀 ㅋㅋ',
   effectiveness,
   damage: DAMAGE[effectiveness],
   animation,
@@ -96,10 +97,12 @@ export function DemoScreen() {
     return () => window.clearTimeout(t)
   }, [n, prefs.reducedMotion])
 
+  const isResultPreview = window.location.search.includes('result')
+  const match = makeMatch(round)
   const state: ClientState = {
     connection: 'open',
     you: 'SCREEN',
-    match: makeMatch(round),
+    match: isResultPreview ? { ...match, phase: 'FINISHED', winner: 'A', history: [round] } : match,
     playback: round,
     commentary: {
       [round.attacks[0].eventId]: { text: '충전 단자까지 젖었습니다!', audioPath: null, validUntil: Date.now() + 60_000 },
@@ -108,6 +111,10 @@ export function DemoScreen() {
     toast: null,
     lastActionId: null,
     rejected: null,
+  }
+
+  if (isResultPreview) {
+    return <ResultScreen state={state} you={null} characterIds={{ A: 'grandma', B: 'jaemmin' }} send={() => undefined} />
   }
 
   return (

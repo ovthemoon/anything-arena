@@ -8,7 +8,19 @@ describe('roster', () => {
       const card = characterCard(id, 'm1')
       expect(WeaponProfile.safeParse(card).success).toBe(true)
       expect(card.characterId).toBe(id)
-      expect(card.techniques).toHaveLength(2)
+      expect(card.techniques).toHaveLength(10)
+      expect(new Set(card.techniques.map((x) => x.actionText)).size).toBe(10)
+      for (const x of card.techniques) expect(Array.from(x.actionText).length).toBeLessThanOrEqual(60)
+    }
+  })
+})
+
+describe('roster voice', () => {
+  test('every character has a tone, 2 catchphrases and 2 hates', () => {
+    for (const entry of Object.values(ROSTER)) {
+      expect(entry.voice.tone.length).toBeGreaterThan(0)
+      expect(entry.voice.catchphrases).toHaveLength(2)
+      expect(entry.voice.hates).toHaveLength(2)
     }
   })
 })
