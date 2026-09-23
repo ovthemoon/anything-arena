@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "anything-arena",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // 정적 화면(React 빌드 결과). /api/*, /ws/* 는 SPA 로 안 가고 Worker 가 먼저 처리
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/ws/*"]
+  },
+
+  // 방 하나 = BattleRoom Durable Object 하나 (PRD 12장)
+  "durable_objects": {
+    "bindings": [{ "name": "BATTLE_ROOM", "class_name": "BattleRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BattleRoom"] }],
+
+  // 공유 음성 파일 저장소 (PRD 7장). 배포 전 `npx wrangler r2 bucket create anything-arena-audio`
+  "r2_buckets": [{ "binding": "AUDIO", "bucket_name": "anything-arena-audio" }],
+
+  // Cloudflare Workers AI: 별도 키 없이 텍스트/이미지 모델 호출 가능 (선택)
+  "ai": { "binding": "AI" },
+
+  // 공개 설정값 (PRD 부록 C). 비밀 키는 여기 두지 않고 .env / wrangler secret 으로
+  "vars": {
+    "APP_ENV": "production",
+    "RULESET_VERSION": "v0.1",
+    "MAX_PLAYERS": "2",
+    "INITIAL_HP": "100",
+    "MAX_ROUNDS": "3",
+    "INPUT_WINDOW_MS": "15000",
+    "JUDGE_GRACE_MS": "1500",
+    "ACTION_TEXT_MAX_CHARS": "60",
+    "MAX_CUSTOM_ATTEMPTS_PER_PLAYER_PER_ROUND": "2",
+    "MAX_FOULS_BEFORE_PRESET_ONLY": "2",
+    "RECONNECT_GRACE_MS": "30000",
+    "IDLE_ROOM_TTL_MS": "600000",
+    "TEXT_MODEL": "",
+    "JEV_MODEL": "",
+    "TTS_MODEL": "eleven_flash_v2_5",
+    "PROMPT_VERSION": "v0.1-draft"
+  }
+}
