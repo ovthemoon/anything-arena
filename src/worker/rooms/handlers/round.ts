@@ -32,6 +32,10 @@ type PreparedCommentary = { actionId: string; text: string; audioPath: string | 
 
 const preparedKey = (matchId: string, roundId: number, slot: PlayerSlot): string => `commentary:${matchId}:${roundId}:${slot}`
 
+/** 접수 시점에 시작된 해설·음성 생성 중 아직 안 끝난 것. 정산 때 새로 만들지 않고 이어받는다. */
+const inFlight = new Map<string, Promise<PreparedCommentary | null>>()
+const INFLIGHT_WAIT_MS = 6_000
+
 /** 해설 생성 → 출력 검사 → 음성. 방송은 하지 않는다. 검사 불통과·생성 실패는 null. */
 const prepareCommentary = async (
   ctx: RoomCtx,
@@ -72,9 +76,20 @@ export const precomputeCommentary = async (ctx: RoomCtx, slot: PlayerSlot, actio
     cosmeticTags: [mine.visualTag], reasonCode: judge.reasonCode,
   }
   const weapons: Record<PlayerSlot, WeaponProfile> = slot === 'A' ? { A: mine, B: theirs } : { A: theirs, B: mine }
-  const prepared = await prepareCommentary(ctx, preview, weapons, `${s.matchId}-r${s.roundId}-${slot}-${action.actionId}`)
-  if (!prepared) return
-  await ctx.cachePut<PreparedCommentary>(preparedKey(s.matchId, s.roundId, slot), { actionId: action.actionId, ...prepared })
+  const key = preparedKey(s.matchId, s.roundId, slot)
+  const work = (async (): Promise<PreparedCommentary | null> => {
+    const prepared = await prepareCommentary(ctx, preview, weapons, `${s.matchId}-r${s.roundId}-${slot}-${action.actionId}`)
+    if (!prepared) return null
+    const entry = { actionId: action.actionId, ...prepared }
+    await ctx.cachePut<PreparedCommentary>(key, entry)
+    return entry
+  })()
+  inFlight.set(key, work)
+  try {
+    await work
+  } finally {
+    if (inFlight.get(key) === work) inFlight.delete(key)
+  }
 }
 
 const broadcastCommentary = (ctx: RoomCtx, matchId: string, eventId: string, c: { text: string; audioPath: string | null }): void =>
@@ -89,8 +104,15 @@ const commentaryFor = async (
   weapons: Record<PlayerSlot, WeaponProfile>,
   pendingActionId: string | undefined,
 ): Promise<void> => {
-  const prepared = await ctx.cacheGet<PreparedCommentary>(preparedKey(matchId, roundId, attack.actor))
-  if (prepared && !attack.fallbackReason && pendingActionId && prepared.actionId === pendingActionId) {
+  const key = preparedKey(matchId, roundId, attack.actor)
+  const usable = (p: PreparedCommentary | null | undefined): p is PreparedCommentary =>
+    Boolean(p && !attack.fallbackReason && pendingActionId && p.actionId === pendingActionId)
+  let prepared = await ctx.cacheGet<PreparedCommentary>(key)
+  const pending = inFlight.get(key)
+  if (!usable(prepared) && pending) {
+    prepared = await withTimeout(pending, INFLIGHT_WAIT_MS).catch(() => null)
+  }
+  if (usable(prepared)) {
     broadcastCommentary(ctx, matchId, attack.eventId, prepared)
     return
   }

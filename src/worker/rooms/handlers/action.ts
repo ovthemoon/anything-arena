@@ -10,7 +10,7 @@ type ActionSubmit = Extract<ClientMessage, { type: 'action_submit' }>
 
 const JUDGE_TIMEOUT_MS = 1_500
 /** 둘 다 접수된 뒤, 마지막 공격의 해설·음성 준비를 기다리는 최대 시간. 넘으면 그냥 정산한다. */
-const PRECOMPUTE_WAIT_MS = 4_000
+const PRECOMPUTE_WAIT_MS = 1_000
 const LABEL_MAX_CHARS = 24
 /** 긁기 배틀: 입력한 한 마디가 곧 기술명. 길면 앞부분만. */
 const customLabel = (text: string): string => {
@@ -44,7 +44,7 @@ const accept = async (ctx: RoomCtx, slot: PlayerSlot, action: PendingAction, now
   // 해설·음성은 접수 즉시 미리 만든다. 정산을 기다리지 않는다.
   const precompute = precomputeCommentary(ctx, slot, action).catch((e: unknown) => console.warn('[room] precompute failed', String(e).slice(0, 120)))
   if (bothAccepted(ctx.getState())) {
-    // 둘 다 접수되면 정산 전에 잠깐(최대 TTS 시간) 기다려 방송과 같이 나가게 한다.
+    // 둘 다 접수되면 아주 잠깐만 기다린다. 못 끝난 생성은 정산 쪽이 이어받아 기다린다(첫 해설 장면까지 약 4초 여유).
     await Promise.race([precompute, new Promise((r) => setTimeout(r, PRECOMPUTE_WAIT_MS))])
     await resolveAndAnnounce(ctx, now)
   }
