@@ -1,10 +1,9 @@
 import { createMockAdapters } from './mock'
+import { createRealAdapters } from './real'
 import type { AiAdapters } from './types'
 
 export type { AiAdapters, JudgeRequest } from './types'
 
-/** env.AI_MODE 가 'real' 이고 real.ts 가 있으면 실제, 아니면 mock. Lane C 가 real 을 연결한다. */
-export const createAiAdapters = (env: Env): AiAdapters => {
-  if (env.AI_MODE !== 'real') return createMockAdapters()
-  return createMockAdapters()
-}
+/** env.AI_MODE 가 'real' 이면 실제 어댑터, 그 외(기본 'mock')엔 결정적 가짜. */
+export const createAiAdapters = (env: Env): AiAdapters =>
+  env.AI_MODE === 'real' ? createRealAdapters(env) : createMockAdapters()
