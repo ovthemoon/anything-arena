@@ -35,7 +35,7 @@ export const loadCutout = (url: string): Promise<string> => {
         if (!ctx) return resolve(url)
         ctx.drawImage(img, 0, 0)
         const src = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const keyed = new ImageData(keyOutGreen(src.data), canvas.width, canvas.height)
+        const keyed = new ImageData(keyOutGreen(src.data) as Uint8ClampedArray<ArrayBuffer>, canvas.width, canvas.height)
         ctx.putImageData(keyed, 0, 0)
         canvas.toBlob((blob) => resolve(blob ? URL.createObjectURL(blob) : url), 'image/png')
       } catch {

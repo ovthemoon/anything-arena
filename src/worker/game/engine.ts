@@ -12,7 +12,7 @@ export type EngineState = PublicMatchState & { pending: Record<PlayerSlot, Pendi
 export const SLOTS: readonly PlayerSlot[] = ['A', 'B']
 export const other = (s: PlayerSlot): PlayerSlot => (s === 'A' ? 'B' : 'A')
 
-const emptyPlayer = (slot: PlayerSlot): PublicPlayer => ({ slot, nickname: null, connected: false, ready: false, weapon: null, hp: RULES.INITIAL_HP, actionStatus: 'NONE', fouls: 0, presetOnly: false })
+const emptyPlayer = (slot: PlayerSlot): PublicPlayer => ({ slot, nickname: null, characterId: null, connected: false, ready: false, weapon: null, hp: RULES.INITIAL_HP, actionStatus: 'NONE', fouls: 0, presetOnly: false })
 
 export const createMatch = (roomCode: string, matchId: string, _now: number): EngineState => ({
   roomCode, matchId, phase: 'LOBBY', roundId: 0, deadlineAt: null,
@@ -27,7 +27,7 @@ export const setConnected = (s: EngineState, slot: PlayerSlot, connected: boolea
   patchPlayer(s, slot, { connected })
 
 export const setWeapon = (s: EngineState, slot: PlayerSlot, weapon: WeaponProfile, nickname: string): EngineState =>
-  patchPlayer({ ...s, phase: s.phase === 'LOBBY' ? 'PREPARING' : s.phase }, slot, { weapon, nickname })
+  patchPlayer({ ...s, phase: s.phase === 'LOBBY' ? 'PREPARING' : s.phase }, slot, { weapon, nickname, characterId: weapon.characterId ?? null })
 
 export const startRound = (s: EngineState, now: number): EngineState => ({
   ...s, phase: 'ROUND_INPUT', roundId: s.roundId + 1, deadlineAt: now + RULES.INPUT_WINDOW_MS,

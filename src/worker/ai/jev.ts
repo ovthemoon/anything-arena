@@ -54,7 +54,7 @@ const JUDGE_QUESTIONS = {
   effectiveness: {
     type: 'choice',
     instructions: '`action` 과 `defender.weakness`·`defender.capabilities` 의 관계로 효과를 분류.',
-    criteria: { LIMITED: '능력과 연결이 약하거나 상대 저항에 막힘', NORMAL: '무기 설정에 맞는 일반 공격', STRONG: '`defender.weakness` 를 명확히 이용' },
+    criteria: { MISS: '`defender` 가 완전히 피하거나 공격이 아예 닿지 않음. 명백한 헛손질만', LIMITED: '능력과 연결이 약하거나 상대 저항에 막힘', NORMAL: '무기 설정에 맞는 일반 공격', STRONG: '`defender.weakness` 를 명확히 이용' },
   },
   animation: {
     type: 'choice',

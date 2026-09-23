@@ -63,5 +63,9 @@ export const readSeatCookie = (request: Request): string | null =>
 /** Origin 헤더가 없으면(비브라우저) 허용, 있으면 목록과 정확히 일치해야 한다. */
 export const isAllowedOrigin = (request: Request, allowed: string[]): boolean => {
   const origin = request.headers.get('Origin')
-  return origin === null || allowed.map((o) => o.trim()).includes(origin)
+  if (origin === null) return true
+  // 같은 호스트에서 온 요청은 항상 허용 (배포 도메인을 미리 몰라도 됨). 목록은 추가 허용용.
+  const self = new URL(request.url)
+  if (origin === `${self.protocol}//${self.host}`) return true
+  return allowed.map((o) => o.trim()).filter(Boolean).includes(origin)
 }

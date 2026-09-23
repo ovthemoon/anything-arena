@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ActionStatus, AnimationType, Effectiveness, FallbackReason, MatchPhase, PlayerSlot } from './enums'
+import { ActionStatus, AnimationType, CharacterId, Effectiveness, FallbackReason, MatchPhase, PlayerSlot } from './enums'
 import { WeaponProfile } from './weapon'
 
 export const AttackEvent = z.object({
@@ -9,7 +9,7 @@ export const AttackEvent = z.object({
   techniqueLabel: z.string(),
   approvedActionText: z.string(),
   effectiveness: Effectiveness,
-  damage: z.union([z.literal(20), z.literal(30), z.literal(40)]),
+  damage: z.union([z.literal(0), z.literal(20), z.literal(30), z.literal(40)]),
   animation: AnimationType,
   cosmeticTags: z.array(z.string()),
   reasonCode: z.string(),
@@ -34,6 +34,8 @@ export type RoundResolved = z.infer<typeof RoundResolved>
 export const PublicPlayer = z.object({
   slot: PlayerSlot,
   nickname: z.string().nullable(),
+  /** 선택한 고정 출연진. 미선택이면 null. */
+  characterId: CharacterId.nullable().optional(),
   connected: z.boolean(),
   ready: z.boolean(),
   weapon: WeaponProfile.nullable(),

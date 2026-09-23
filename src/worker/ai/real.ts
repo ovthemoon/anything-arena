@@ -8,6 +8,7 @@ import { generateWeaponWithOpenRouter } from './weapon-gen'
 import { checkTextWithJev, judgeWithJev } from './jev'
 import { generateCommentaryWithOpenRouter } from './commentary'
 import { synthesizeToR2 } from './tts'
+import { generateWeaponImageToR2 } from './weapon-image'
 import type { AiAdapters, JudgeRequest } from './types'
 
 const JEV_TIMEOUT_MS = 1500
@@ -38,6 +39,7 @@ export const createRealAdapters = (env: Env): AiAdapters => {
   const jevModel = env.JEV_MODEL || 'jev-latest'
   const ttsModel = env.TTS_MODEL
   const ttsVoice = env.TTS_VOICE || undefined
+  const imageModel = env.IMAGE_MODEL || 'google/gemini-3.1-flash-lite-image'
   const jevOptions = { apiKey: env.TYPESAFE_API_KEY, model: jevModel, timeoutMs: JEV_TIMEOUT_MS }
 
   return {
@@ -55,6 +57,11 @@ export const createRealAdapters = (env: Env): AiAdapters => {
     async generateCommentary(event: AttackEvent, weapons: Record<PlayerSlot, WeaponProfile>) {
       if (!or) return mock.generateCommentary(event, weapons)
       return generateCommentaryWithOpenRouter(or, textModel, event, weapons)
+    },
+
+    async generateWeaponImage(profile, ctx) {
+      if (!or) return mock.generateWeaponImage(profile, ctx)
+      return generateWeaponImageToR2(or, env.AUDIO, imageModel, profile, ctx)
     },
 
     async synthesize(text: string, key: string) {

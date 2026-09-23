@@ -72,7 +72,30 @@ export const createOpenRouter = (apiKey: string, fetchImpl: typeof fetch = fetch
     return res.arrayBuffer()
   }
 
-  return { chatJson, speech }
+  /**
+   * 이미지 출력 모델을 chat/completions 로 호출해 data URL 을 돌려준다.
+   * 응답 위치: choices[0].message.images[0].image_url.url (연출 설계 §5 측정 규격).
+   */
+  const chatImage = async (opts: { model: string; prompt: string; timeoutMs: number }): Promise<string> => {
+    const res = await fetchImpl(CHAT_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: opts.model,
+        messages: [{ role: 'user', content: opts.prompt }],
+        modalities: ['image', 'text'],
+      }),
+      signal: AbortSignal.timeout(opts.timeoutMs),
+    })
+    if (!res.ok) throw new Error(`openrouter image failed: status ${res.status}`)
+    const body = (await res.json()) as { choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }> }
+    const url = body.choices?.[0]?.message?.images?.[0]?.image_url?.url
+    if (typeof url !== 'string' || !url.startsWith('data:image/')) throw new Error('openrouter image failed: no image')
+    return url
+  }
+
+  return {
+    chatImage, chatJson, speech }
 }
 
 export type OpenRouterClient = ReturnType<typeof createOpenRouter>

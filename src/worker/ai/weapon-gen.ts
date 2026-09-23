@@ -3,6 +3,7 @@ import type { PlayerSlot } from '../../shared/schemas/enums'
 import { WeaponProfile, type WeaponInput } from '../../shared/schemas/weapon'
 import type { OpenRouterClient } from './openrouter'
 import { WEAPON_GEN_SYSTEM, WeaponGenOutput, buildWeaponGenUser } from './prompts/weapon'
+import { rosterDescription } from '../../shared/rules/roster'
 
 const WEAPON_GEN_JSON_SCHEMA = z.toJSONSchema(WeaponGenOutput)
 
@@ -25,7 +26,7 @@ export const generateWeaponWithOpenRouter = async (
     or.chatJson({
       model,
       system: WEAPON_GEN_SYSTEM,
-      user: buildWeaponGenUser(input.weaponName, input.description, input.character),
+      user: buildWeaponGenUser(input.weaponName, input.description, input.character, rosterDescription(input.characterId)),
       schema: WeaponGenOutput,
       jsonSchema: WEAPON_GEN_JSON_SCHEMA,
       timeoutMs: 8000,
@@ -43,6 +44,8 @@ export const generateWeaponWithOpenRouter = async (
     id,
     version: 1,
     characterName: output.characterName,
+    characterId: input.characterId ?? null,
+    imageUrl: null,
     displayName: input.weaponName,
     tagline: output.tagline,
     capabilities: output.capabilities,

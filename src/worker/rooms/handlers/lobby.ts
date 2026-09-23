@@ -10,6 +10,7 @@ import { announceRoundStarted } from './round'
 type WeaponSubmit = Extract<ClientMessage, { type: 'weapon_submit' }>
 
 const WEAPON_TIMEOUT_MS = 8_000
+const IMAGE_TIMEOUT_MS = 8_000
 const CHECK_TIMEOUT_MS = 3_000
 
 const defaultWeapon = (slot: PlayerSlot): WeaponProfile => DEFAULT_WEAPONS[slot === 'A' ? 0 : 1]
@@ -51,6 +52,23 @@ export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: We
   const weapon = await generateWeapon(ctx, slot, msg)
   if (!isPreMatch(ctx)) return
   await ctx.commit(setWeapon(ctx.getState(), slot, weapon, nickname.trim()))
+  ctx.broadcastSnapshot()
+  // 무기 그림은 카드가 뜬 뒤 따라온다. 전투를 기다리게 하지 않는다 (연출 설계 §7-4).
+  void attachWeaponImage(ctx, slot, weapon, nickname.trim())
+}
+
+const attachWeaponImage = async (ctx: RoomCtx, slot: PlayerSlot, weapon: WeaponProfile, nickname: string): Promise<void> => {
+  let imageUrl: string | null = null
+  try {
+    imageUrl = await withTimeout(ctx.ai.generateWeaponImage(weapon, { matchId: ctx.getState().matchId, slot }), IMAGE_TIMEOUT_MS)
+  } catch (e) {
+    console.warn('[room] weapon image failed', String(e).slice(0, 120))
+  }
+  if (!imageUrl) return
+  const current = ctx.getState()
+  // 그 사이 재대결·재생성으로 무기가 바뀌었으면 버린다.
+  if (current.players[slot].weapon?.id !== weapon.id) return
+  await ctx.commit(setWeapon(current, slot, { ...weapon, imageUrl }, nickname))
   ctx.broadcastSnapshot()
 }
 

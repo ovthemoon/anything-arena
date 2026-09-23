@@ -35,5 +35,5 @@ export const WEAPON_GEN_SYSTEM = [
   `  animation 은 다음 중 하나: ${AnimationType.options.join(', ')}`,
 ].join('\n')
 
-export const buildWeaponGenUser = (weaponName: string, description: string, character: string): string =>
-  JSON.stringify({ character, weaponName, description })
+export const buildWeaponGenUser = (weaponName: string, description: string, character: string, rosterDescription = ''): string =>
+  JSON.stringify({ character: rosterDescription || character, characterNote: rosterDescription && character ? character : undefined, weaponName, description })

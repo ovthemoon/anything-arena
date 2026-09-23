@@ -1239,6 +1239,8 @@ done
 
 # Lane D. 에셋·비주얼 (별도 세션, 여기엔 계약만)
 
+> **2026-09-23 갱신:** 아래 16장 PNG 스크립트 계획은 폐기. 연출 설계 `docs/superpowers/specs/2026-09-23-battle-presentation-design.md` §5~§7 이 대체한다: 배경 1장 `public/assets/arena-bg.png`, 고정 출연진 `public/assets/characters/<id>/*.png`, 무기 그림은 서버가 `generateWeaponImage` 로 1장 생성해 `/api/images/...` 로 제공, 실패 시 `tag-<VisualTag>.svg` 실루엣. `Effectiveness.MISS`(0 피해), `CharacterId`, `WeaponProfile.imageUrl` 계약 반영 완료.
+
 다른 세션이 맡는다. 이 세션과 부딪히지 않도록 **건드릴 파일과 이름 계약**만 적어둔다.
 
 **그 세션이 만드는 것:**

@@ -18,6 +18,8 @@ export interface AiAdapters {
   generateWeapon(input: WeaponInput, ctx: { matchId: string; slot: PlayerSlot }): Promise<WeaponProfile>
   judgeAction(req: JudgeRequest): Promise<JudgeResult>
   generateCommentary(event: AttackEvent, weapons: Record<PlayerSlot, WeaponProfile>): Promise<string>
+  /** 무기 그림 1장. 성공 시 동일 출처 경로(/api/images/...), 실패·타임아웃·미지원이면 null. 전투를 막지 않는다. */
+  generateWeaponImage(profile: WeaponProfile, ctx: { matchId: string; slot: PlayerSlot }): Promise<string | null>
   /** 성공 시 클라이언트가 GET 할 수 있는 경로(/api/audio/...), 실패·미지원이면 null */
   synthesize(text: string, key: string): Promise<string | null>
   /** 닉네임·무기명·생성 출력 검사 */

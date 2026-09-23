@@ -7,7 +7,8 @@ export type PlayerSlot = z.infer<typeof PlayerSlot>
 export const ConnectionRole = z.enum(['A', 'B', 'SCREEN'])
 export type ConnectionRole = z.infer<typeof ConnectionRole>
 
-export const Effectiveness = z.enum(['LIMITED', 'NORMAL', 'STRONG'])
+/** MISS 는 회피·완전 실패. 피해 0. (v0.2 연출 설계 §7) */
+export const Effectiveness = z.enum(['MISS', 'LIMITED', 'NORMAL', 'STRONG'])
 export type Effectiveness = z.infer<typeof Effectiveness>
 
 export const AnimationType = z.enum(['DASH', 'PROJECTILE', 'SHOCKWAVE', 'PSYCHIC'])
@@ -16,6 +17,10 @@ export type AnimationType = z.infer<typeof AnimationType>
 /** 검수된 시각 태그 목록. 이미지 대신 색·형태·아이콘 조합에 쓴다 (PRD 9). */
 export const VisualTag = z.enum(['WET', 'ELECTRIC', 'SHAKY', 'FIRE', 'ICE', 'SHADOW', 'SHINY', 'SOFT', 'HEAVY', 'ABSTRACT'])
 export type VisualTag = z.infer<typeof VisualTag>
+
+/** 고정 출연진. 자세 PNG 는 public/assets/characters/<id>/{idle,attack,hit,win,lose}.png */
+export const CharacterId = z.enum(['grandma', 'jaemmin'])
+export type CharacterId = z.infer<typeof CharacterId>
 
 export const ModerationDecision = z.enum(['ALLOW', 'REWRITE', 'FOUL', 'UNCERTAIN'])
 export type ModerationDecision = z.infer<typeof ModerationDecision>

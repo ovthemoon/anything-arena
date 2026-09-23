@@ -1,5 +1,6 @@
 import { handleAiRoute } from './ai/routes'
 import { handleAudioRoute } from './ai/audio-route'
+import { handleImageRoute } from './ai/image-route'
 import { jsonResponse } from './lib/response'
 import { BattleRoom, INTERNAL_HEADER } from './rooms/battle-room'
 import { generateRoomCode, isAllowedOrigin, isValidRoomCode, issueSeatToken, readSeatCookie, seatCookie, verifySeatToken } from './security/session'
@@ -110,6 +111,7 @@ export default {
     }
 
     if (url.pathname.startsWith(`${API_PREFIX}/audio/`)) return handleAudioRoute(request, env)
+    if (url.pathname.startsWith(`${API_PREFIX}/images/`)) return handleImageRoute(request, env)
 
     if (url.pathname.startsWith(`${API_PREFIX}/ai`)) {
       return handleAiRoute(request, env)

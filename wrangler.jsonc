@@ -32,6 +32,7 @@
     "AI_MODE": "mock",
     "ALLOWED_ORIGINS": "http://localhost:5173",
     "TTS_VOICE": "Korean_SweetGirl",
+    "IMAGE_MODEL": "google/gemini-3.1-flash-lite-image",
     "RULESET_VERSION": "v0.1",
     "MAX_PLAYERS": "2",
     "INITIAL_HP": "100",
