@@ -12,6 +12,8 @@ export interface ActionPanelProps {
   commentaryText: string | null
   rejected: RejectedInfo | null
   onFreeText: (text: string) => void
+  /** 반칙 2회(presetOnly) 벌칙: 직접 입력 대신 추천 한 마디 중 골라서만 공격 */
+  onTechnique: (techniqueId: string) => void
 }
 
 const REJECT_NOTES: Record<string, string> = {
@@ -28,8 +30,8 @@ const noteFor = (rejected: RejectedInfo | null): string | null => {
   return REJECT_NOTES[rejected.reasonCode] ?? '입력이 거절됐어요. 다시 써주세요.'
 }
 
-/** 하단: 상대 아픈 곳 힌트·자유 입력·공격. 추천 한 마디는 입력창을 채우기만 한다(즉시 공격 버튼 아님). presetOnly 면 잠금. */
-export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText }: ActionPanelProps) {
+/** 하단: 상대 아픈 곳 힌트·자유 입력·공격. 추천 한 마디는 입력창을 채우기만 한다. presetOnly(반칙 2회)면 직접 입력을 잠그고 추천 중 골라서만 공격. */
+export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText, onTechnique }: ActionPanelProps) {
   const [text, setText] = useState('')
   const suggestions = me?.weapon?.techniques ?? []
   const weakPoints = (opponentWeakness ?? '').split(',').map((w) => w.trim()).filter(Boolean)
@@ -38,7 +40,7 @@ export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, co
   const canAct = isInputOpen && !submitted
   const chars = countChars(text)
   const freeInvalid = chars === 0 || chars > LIMITS.ACTION_TEXT
-  const note = presetOnly ? '자유 입력이 잠겼습니다. 이번 경기는 기본 공격으로 진행됩니다.' : noteFor(rejected)
+  const note = presetOnly ? '반칙 2회. 직접 입력은 잠겼습니다. 아래 한 마디 중 골라서 공격하세요.' : noteFor(rejected)
 
   const submitFree = () => {
     if (!canAct || presetOnly || freeInvalid) return
@@ -87,6 +89,15 @@ export function ActionPanel({ me, opponentWeakness, isInputOpen, isCollapsed, co
           </span>
         </button>
       </form>
+      {suggestions.length > 0 && presetOnly && (
+        <div className="hint">
+          {suggestions.map((t) => (
+            <button key={t.id} type="button" className="tech" disabled={!canAct} title={t.actionText} onClick={() => onTechnique(t.id)}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
       {suggestions.length > 0 && !presetOnly && (
         <div className="hint">
           <span className="muted">말이 안 떠오르면</span>

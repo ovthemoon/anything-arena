@@ -101,6 +101,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
   const commentaryText = attack ? state.commentary[attack.eventId]?.text ?? null : null
   const showSubtitle = !!commentaryText && (playback.step === 'commentary' || playback.done)
 
+  const submitTechnique = (techniqueId: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), techniqueId })
   const submitFreeText = (text: string) => send({ type: 'action_submit', matchId: match.matchId, roundId: match.roundId, actionId: newId(), text })
 
   const playersForHud = {
@@ -118,6 +119,9 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
         const player = match.players[slot]
         const v = visualFor(slot, playback, attack)
         const isActor = attack?.actor === slot
+        const hasImage = !!weaponImageUrlOf(player?.weapon)
+        // 말풍선 모드: 기술명 단계(2.2초) 동안 말풍선이 공격자 옆에 먼저 떠서 읽을 시간을 준다
+        const phase = !hasImage && isActor && playback.step === 'name' ? 'windup' : weaponPhaseFor(playback.step, isActor, playback.done)
         return (
           <div key={slot} style={{ display: 'contents' }}>
             <CharacterSprite id={characterIds[slot]} pose={v.pose} side={sideOf(slot)} shiftX={v.shiftX} isLunging={v.isLunging} isFlashing={v.isFlashing} />
@@ -126,7 +130,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
                 imageUrl={weaponImageUrlOf(player.weapon)}
                 visualTag={player.weapon.visualTag}
                 side={sideOf(slot)}
-                phase={weaponPhaseFor(playback.step, isActor, playback.done)}
+                phase={phase}
                 animation={attack && isActor ? attack.animation : 'DASH'}
                 isMiss={isActor && outcome === 'MISS' && !frozen}
                 isStatic={isActor && frozen}
@@ -139,7 +143,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
         )
       })}
 
-      {attack && playback.step === 'name' && <Fx kind="name" text={attack.techniqueLabel} />}
+      {attack && playback.step === 'name' && !!weaponImageUrlOf(match.players[attack.actor]?.weapon) && <Fx kind="name" text={attack.techniqueLabel} />}
       {attack && isResult && <Fx kind="result" text={fx.label} outcome={outcome} damage={attack.damage} targetSide={sideOf(attack.target)} showDamage={fx.showDamage} />}
 
       <Hud players={playersForHud} characterIds={characterIds} roundId={isPlaying && resolved ? resolved.roundId : match.roundId} seconds={isInputOpen ? seconds : null} />
@@ -155,6 +159,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
           commentaryText={null}
           rejected={state.rejected}
           onFreeText={submitFreeText}
+          onTechnique={submitTechnique}
         />
       )}
     </div>
