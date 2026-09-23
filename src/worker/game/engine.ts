@@ -1,4 +1,4 @@
-import { RULES, DEFAULT_ATTACK } from '../../shared/rules/constants'
+import { RULES, DEFAULT_ATTACK, FROZEN_ACTION } from '../../shared/rules/constants'
 import { DEFAULT_ATTACK_DAMAGE, damageFor } from '../../shared/rules/damage'
 import { applyDamage } from '../../shared/rules/hp'
 import type { FallbackReason, PlayerSlot } from '../../shared/schemas/enums'
@@ -82,6 +82,8 @@ const toAttack = (s: EngineState, actor: PlayerSlot, seq: number): AttackEvent =
   }
   const attack: AttackEvent = usable && p && judge
     ? { ...base, techniqueLabel: p.label, approvedActionText: p.text, effectiveness: judge.effectiveness, damage: damageFor(judge.effectiveness), animation: judge.animation, reasonCode: judge.reasonCode }
+    : fallbackReason === 'TIMEOUT'
+    ? { ...base, techniqueLabel: FROZEN_ACTION.label, approvedActionText: FROZEN_ACTION.actionText, effectiveness: 'MISS', damage: 0, animation: FROZEN_ACTION.animation, reasonCode: 'OFF_THEME' }
     : { ...base, techniqueLabel: DEFAULT_ATTACK.label, approvedActionText: DEFAULT_ATTACK.actionText, effectiveness: 'NORMAL', damage: DEFAULT_ATTACK_DAMAGE, animation: DEFAULT_ATTACK.animation, reasonCode: 'NORMAL' }
   return fallbackReason ? { ...attack, fallbackReason } : attack
 }

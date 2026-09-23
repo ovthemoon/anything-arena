@@ -13,7 +13,14 @@ export const RULES = {
   IDLE_ROOM_TTL_MS: 600_000,
 } as const
 
-/** 미입력·판정 실패 시 코드가 정의한 안전한 대체 행동 (PRD 4.3). 피해 30. */
+/** 시간 초과로 아무 말도 못 한 경우. 피해 0 (사용자 결정 2026-09-23). */
+export const FROZEN_ACTION = {
+  label: '얼어붙음',
+  actionText: '겁에 질려 아무 말도 하지 못했다',
+  animation: 'PSYCHIC',
+} as const
+
+/** 판정 실패·시스템 지시 등 플레이어 잘못이 아닌 대체 행동 (PRD 4.3). 피해 30. */
 export const DEFAULT_ATTACK = {
   label: '기본 공격',
   actionText: '무기를 힘껏 휘두른다',

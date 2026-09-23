@@ -28,12 +28,13 @@ describe('engine', () => {
     expect(state.players.A.hp).toBe(80)
     expect(resolved.attacks.map((a) => a.damage)).toEqual([40, 20])
   })
-  test('missing action becomes default attack of 30 with TIMEOUT reason', () => {
+  test('missing action is a frozen MISS with 0 damage and TIMEOUT reason', () => {
     let s = readyMatch()
     s = acceptAction(s, 'A', { actionId: 'a1', label: 'x', text: 'x', judge: ok('NORMAL') })
     const { resolved } = resolveRound(s, 2000)
     const b = resolved.attacks.find((a) => a.actor === 'B')!
-    expect(b.damage).toBe(30); expect(b.fallbackReason).toBe('TIMEOUT')
+    expect(b.damage).toBe(0); expect(b.effectiveness).toBe('MISS'); expect(b.fallbackReason).toBe('TIMEOUT')
+    expect(b.approvedActionText).toContain('겁에 질려')
   })
   test('finishes after 3 rounds and picks higher hp as winner', () => {
     let s = readyMatch()
