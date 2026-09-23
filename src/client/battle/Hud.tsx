@@ -78,7 +78,7 @@ export function Hud({ players, characterIds, roundId, seconds, maxHp = 100 }: Hu
       <div className="hud__center">
         <div className="hud__round">{roundId > 0 ? `ROUND ${roundId}` : 'READY'}</div>
         <div className={`hud__timer${seconds !== null && seconds <= URGENT_SECONDS ? ' is-urgent' : ''}`}>{seconds ?? '--'}</div>
-        <img className="hud__logo" src="/assets/logo.png" alt="아무거나 무기 배틀" />
+        <img className="hud__logo" src="/assets/logo.png" alt="아무말 대난투" />
       </div>
       <Side player={players.B} id={characterIds.B} side="right" maxHp={maxHp} />
     </div>
