@@ -1,0 +1,82 @@
+import type { PlayerSlot } from '../../../shared/schemas/enums'
+import type { ClientMessage } from '../../../shared/schemas/messages'
+import type { WeaponProfile } from '../../../shared/schemas/weapon'
+import { WeaponProfile as WeaponProfileSchema } from '../../../shared/schemas/weapon'
+import { DEFAULT_WEAPONS } from '../../game/default-weapons'
+import { SLOTS, createMatch, setConnected, setReady, setWeapon } from '../../game/engine'
+import { type RoomCtx, errorMessage, withTimeout } from '../room-context'
+import { announceRoundStarted } from './round'
+
+type WeaponSubmit = Extract<ClientMessage, { type: 'weapon_submit' }>
+
+const WEAPON_TIMEOUT_MS = 8_000
+const CHECK_TIMEOUT_MS = 3_000
+
+const defaultWeapon = (slot: PlayerSlot): WeaponProfile => DEFAULT_WEAPONS[slot === 'A' ? 0 : 1]
+const isPreMatch = (ctx: RoomCtx): boolean => ['LOBBY', 'PREPARING'].includes(ctx.getState().phase)
+
+const allAllowed = async (ctx: RoomCtx, texts: string[]): Promise<boolean> => {
+  try {
+    const verdicts = await withTimeout(Promise.all(texts.map((t) => ctx.ai.checkText(t))), CHECK_TIMEOUT_MS)
+    return verdicts.every((v) => v === 'ALLOW')
+  } catch (e) {
+    console.warn('[room] checkText failed', String(e))
+    return false
+  }
+}
+
+const generateWeapon = async (ctx: RoomCtx, slot: PlayerSlot, msg: WeaponSubmit): Promise<WeaponProfile> => {
+  try {
+    const raw = await withTimeout(ctx.ai.generateWeapon(msg.weapon, { matchId: ctx.getState().matchId, slot }), WEAPON_TIMEOUT_MS)
+    const parsed = WeaponProfileSchema.safeParse(raw)
+    if (parsed.success) return parsed.data
+    console.warn('[room] generated weapon invalid', parsed.error.message)
+  } catch (e) {
+    console.warn('[room] weapon generation failed', String(e))
+  }
+  return defaultWeapon(slot)
+}
+
+export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: WeaponSubmit): Promise<void> => {
+  if (!isPreMatch(ctx) || ctx.getState().players[slot].ready) {
+    ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode: 'NOT_IN_LOBBY', canRetry: false })
+    return
+  }
+  const { nickname, character, weaponName, description } = msg.weapon
+  const texts = [nickname.trim(), character.trim(), weaponName.trim(), description.trim()].filter((t) => t.length > 0)
+  if (!(await allAllowed(ctx, texts))) {
+    ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode: 'MODERATION', canRetry: true })
+    return
+  }
+  const weapon = await generateWeapon(ctx, slot, msg)
+  if (!isPreMatch(ctx)) return
+  await ctx.commit(setWeapon(ctx.getState(), slot, weapon, nickname.trim()))
+  ctx.broadcastSnapshot()
+}
+
+export const handleReady = async (ctx: RoomCtx, slot: PlayerSlot, matchId: string, now: number): Promise<void> => {
+  const s = ctx.getState()
+  if (matchId !== s.matchId) { ctx.sendTo(slot, errorMessage('STALE_MATCH', 'matchId mismatch')); return }
+  if (!isPreMatch(ctx)) return
+  // 디버그 편의: 무기 없이 ready 하면 기본 무기를 쓴다.
+  const armed = s.players[slot].weapon ? s : setWeapon(s, slot, defaultWeapon(slot), `Player ${slot}`)
+  const next = setReady(armed, slot, now)
+  await ctx.commit(next)
+  if (next.phase === 'ROUND_INPUT') await announceRoundStarted(ctx, now)
+  ctx.broadcastSnapshot()
+}
+
+export const handleRematch = async (ctx: RoomCtx, slot: PlayerSlot, matchId: string, now: number): Promise<void> => {
+  const s = ctx.getState()
+  if (s.phase !== 'FINISHED' || matchId !== s.matchId) { ctx.sendTo(slot, errorMessage('NOT_FINISHED', 'rematch only after finish')); return }
+  const votes = Array.from(new Set([...ctx.getRematchVotes(), slot]))
+  if (votes.length < SLOTS.length) {
+    await ctx.setRematchVotes(votes)
+    return
+  }
+  const fresh = SLOTS.reduce((acc, p) => setConnected(acc, p, s.players[p].connected), createMatch(s.roomCode, crypto.randomUUID(), now))
+  await ctx.setRematchVotes([])
+  await ctx.resetProcessed()
+  await ctx.commit(fresh)
+  ctx.broadcastSnapshot()
+}

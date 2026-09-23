@@ -3,7 +3,7 @@ import type { WeaponProfile } from '../../shared/schemas/weapon'
 /** 설정 생성 실패 시 쓰는 검수된 기본 무기 (PRD 5). */
 export const DEFAULT_WEAPONS: [WeaponProfile, WeaponProfile] = [
   {
-    id: 'default-wet-sock', version: 1, displayName: '젖은 양말', tagline: '하루 종일 따라다니는 축축함',
+    id: 'default-wet-sock', version: 1, characterName: '빨래 못 말린 자취생', displayName: '젖은 양말', tagline: '하루 종일 따라다니는 축축함',
     capabilities: ['수분 전달', '휘두르기'], weakness: '열', visualTag: 'WET',
     techniques: [
       { id: 'wet-1', name: '축축한 최후의 일격', actionText: '양말을 휘둘러 상대를 흠뻑 적신다', animation: 'DASH' },
@@ -11,7 +11,7 @@ export const DEFAULT_WEAPONS: [WeaponProfile, WeaponProfile] = [
     ],
   },
   {
-    id: 'default-phone-1pct', version: 1, displayName: '배터리 1% 스마트폰', tagline: '마지막 순간까지 꺼지지 않는 집념',
+    id: 'default-phone-1pct', version: 1, characterName: '충전기 잃어버린 대학생', displayName: '배터리 1% 스마트폰', tagline: '마지막 순간까지 꺼지지 않는 집념',
     capabilities: ['진동', '화면 빛'], weakness: '수분', visualTag: 'ELECTRIC',
     techniques: [
       { id: 'phone-1', name: '방전 직전 진동파', actionText: '남은 힘을 모아 격렬하게 진동한다', animation: 'SHOCKWAVE' },
@@ -19,3 +19,11 @@ export const DEFAULT_WEAPONS: [WeaponProfile, WeaponProfile] = [
     ],
   },
 ]
+
+/** 휴대폰 '추천 캐릭터' 목록. 고르면 이 값으로 weapon_submit 을 보낸다 (프리셋 = 미리 채운 입력). */
+export const PRESET_CHARACTERS = [
+  { character: '순대국밥 20년차 욕쟁이 할머니', weaponName: '국자', description: '국물 회오리를 일으킨다' },
+  { character: '내 나이 15 이잼민', weaponName: '응? 키보드', description: '말대꾸로 방패를 만든다' },
+  { character: '빨래 못 말린 자취생', weaponName: '젖은 양말', description: '하루 종일 따라다니는 축축함' },
+  { character: '충전기 잃어버린 대학생', weaponName: '배터리 1% 스마트폰', description: '마지막까지 꺼지지 않는 집념' },
+] as const

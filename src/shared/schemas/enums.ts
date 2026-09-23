@@ -3,6 +3,10 @@ import { z } from 'zod'
 export const PlayerSlot = z.enum(['A', 'B'])
 export type PlayerSlot = z.infer<typeof PlayerSlot>
 
+/** WebSocket 연결의 역할. SCREEN 은 공용 중계 화면: 모든 방송을 받지만 행동은 못 한다. */
+export const ConnectionRole = z.enum(['A', 'B', 'SCREEN'])
+export type ConnectionRole = z.infer<typeof ConnectionRole>
+
 export const Effectiveness = z.enum(['LIMITED', 'NORMAL', 'STRONG'])
 export type Effectiveness = z.infer<typeof Effectiveness>
 

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { WeaponInput } from './weapon'
 import { PublicMatchState, RoundResolved } from './match'
-import { PlayerSlot } from './enums'
+import { ConnectionRole } from './enums'
 import { LIMITS, countChars } from '../rules/limits'
 
 const ActionSubmit = z
@@ -25,7 +25,7 @@ export const ClientMessage = z.discriminatedUnion('type', [
 export type ClientMessage = z.infer<typeof ClientMessage>
 
 export const ServerMessage = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('room_snapshot'), state: PublicMatchState, you: PlayerSlot }),
+  z.object({ type: z.literal('room_snapshot'), state: PublicMatchState, you: ConnectionRole }),
   z.object({ type: z.literal('round_started'), matchId: z.string(), roundId: z.number().int(), deadlineAt: z.number() }),
   z.object({ type: z.literal('action_pending'), actionId: z.string() }),
   z.object({ type: z.literal('action_accepted'), actionId: z.string() }),

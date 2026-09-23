@@ -14,7 +14,7 @@ export const createMockAdapters = (): AiAdapters => ({
     const tag = VisualTag.options[h % VisualTag.options.length]
     const anim = AnimationType.options
     const profile: WeaponProfile = {
-      id: `${ctx.matchId}-${ctx.slot}-${h}`, version: 1, displayName: input.weaponName,
+      id: `${ctx.matchId}-${ctx.slot}-${h}`, version: 1, characterName: input.character || input.nickname, displayName: input.weaponName,
       tagline: input.description || `${input.weaponName}의 기묘한 집념`,
       capabilities: ['휘두르기', '존재감'], weakness: '무관심', visualTag: tag,
       techniques: [

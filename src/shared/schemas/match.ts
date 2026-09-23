@@ -53,6 +53,8 @@ export const PublicMatchState = z.object({
   players: z.record(PlayerSlot, PublicPlayer),
   history: z.array(RoundResolved),
   winner: PlayerSlot.nullable().optional(),
+  /** 공용 중계 화면이 연결돼 있는지 */
+  screenConnected: z.boolean().optional(),
   eventSeq: z.number().int(),
   rulesetVersion: z.string(),
 })
