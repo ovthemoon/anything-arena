@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { bgmWanted, outcomeCue, resultCue, roundStartCue } from '../../../src/client/audio/cues'
+import { outcomeCue, resultCue, roundStartCue } from '../../../src/client/audio/cues'
 
 describe('outcomeCue', () => {
   test.each([
@@ -38,22 +38,5 @@ describe('roundStartCue', () => {
   })
   test('does not fire when first seen mid-battle (reconnect into playback)', () => {
     expect(roundStartCue(null, { phase: 'ROUND_PLAYBACK', roundId: 3 })).toBe(false)
-  })
-})
-
-describe('bgmWanted', () => {
-  test.each([
-    ['LOBBY', false],
-    ['PREPARING', false],
-    ['ROUND_INPUT', true],
-    ['ROUND_RESOLVING', true],
-    ['ROUND_PLAYBACK', true],
-    ['FINISHED', false],
-    ['CLOSED', false],
-  ] as const)('%s → %s', (phase, wanted) => {
-    expect(bgmWanted(phase)).toBe(wanted)
-  })
-  test('no match yet → no music', () => {
-    expect(bgmWanted(null)).toBe(false)
   })
 })

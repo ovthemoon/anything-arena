@@ -44,8 +44,17 @@ html, body { margin: 0; background: #08060d; overflow-x: hidden; }
 .seat-card__name { font-weight: 900; font-size: 1.25em; color: #ffe259; }
 .seat-card__desc { line-height: 1.3; opacity: .9; }
 .seat-card__weak { display: flex; gap: .3em; flex-wrap: wrap; font-size: .85em; }
+/* 대기실 배치: 위 카드 → 캐릭터(VS 는 캐릭터 가운데 높이) → 아래 패널. 전투 화면 배치는 건드리지 않는다. */
+.lobby .char { height: 37%; bottom: 36%; }
+.lobby .vs { top: 45.5%; transform: translate(-50%, -50%); }
+.lobby .seat-label { bottom: 33.5%; }
 @media (orientation: portrait) {
   .seat-card { width: 46%; top: 2%; font-size: 11px; }
+  .lobby .char { width: 34%; height: auto; bottom: 64%; }
+  .lobby .vs { top: 28%; }
+  .lobby .seat-label { bottom: 61%; }
+  /* 고르기 단계 패널이 캐릭터 발을 가리지 않도록 목록 높이를 줄인다 (안에서 스크롤). */
+  .lobby__form .roster { max-height: 36svh; }
 }
 .seat-label { position: absolute; bottom: 3%; font-weight: 900; text-shadow: 2px 2px 0 #000; font-size: clamp(13px, 1.8vw, 22px); z-index: 4; }
 .seat-label--left { left: 8%; }

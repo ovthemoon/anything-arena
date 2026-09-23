@@ -15,11 +15,16 @@ export const SFX_PATHS: Record<SfxName, string> = {
   lose: `${AUDIO_DIR}/lose.mp3`,
 }
 
-export const BGM_PATH = `${AUDIO_DIR}/bgm-battle.mp3`
+export type BgmTrack = 'lobby' | 'battle'
 
-const SFX_VOLUME = 0.9
-/** 배경음은 해설 음성 밑에 깔리도록 낮게. */
-const BGM_VOLUME = 0.35
+export const BGM_PATHS: Record<BgmTrack, string> = {
+  lobby: `${AUDIO_DIR}/bgm-lobby.mp3`,
+  battle: `${AUDIO_DIR}/bgm-battle.mp3`,
+}
+
+export const SFX_VOLUME = 0.9
+/** 배경음은 해설 음성·효과음 밑에 깔리도록 낮게. */
+export const BGM_VOLUME = 0.18
 
 export interface PlayOptions {
   loop: boolean
@@ -32,20 +37,21 @@ export interface SfxDeps {
 
 export interface SfxPlayer {
   play: (name: SfxName) => void
-  startBgm: () => void
+  startBgm: (track: BgmTrack) => void
   stopBgm: () => void
   setMuted: (muted: boolean) => void
 }
 
 /**
  * 효과음·배경음 재생기. 실제 Audio 객체는 deps 로 주입해 테스트한다.
- * 규칙: 음소거면 아무것도 안 낸다. 배경음은 한 번에 하나만 돌고, 음소거를 풀면
- * 아직 원하는 상태(startBgm 이후 stopBgm 전)일 때만 다시 시작한다.
+ * 규칙: 음소거면 아무것도 안 낸다. 배경음은 한 번에 하나만 돌고(다른 곡을 요청하면 갈아탄다),
+ * 음소거를 풀면 아직 원하는 곡이 있을 때(startBgm 이후 stopBgm 전)만 그 곡을 다시 시작한다.
  * 재생 실패(자동재생 차단, 파일 없음)는 게임을 멈추면 안 되므로 삼킨다.
  */
 export function createSfxPlayer(deps: SfxDeps): SfxPlayer {
   let muted = false
-  let bgmWanted = false
+  let wantedTrack: BgmTrack | null = null
+  let playingTrack: BgmTrack | null = null
   let bgm: AudioHandle | null = null
 
   const safePlay = (url: string, options: PlayOptions): AudioHandle | null => {
@@ -64,23 +70,27 @@ export function createSfxPlayer(deps: SfxDeps): SfxPlayer {
   const haltBgm = (): void => {
     bgm?.stop()
     bgm = null
+    playingTrack = null
   }
 
-  const startBgm = (): void => {
-    bgmWanted = true
-    if (muted || bgm) return
-    bgm = safePlay(BGM_PATH, { loop: true, volume: BGM_VOLUME })
+  const startBgm = (track: BgmTrack): void => {
+    wantedTrack = track
+    if (muted) return
+    if (playingTrack === track && bgm) return
+    haltBgm()
+    bgm = safePlay(BGM_PATHS[track], { loop: true, volume: BGM_VOLUME })
+    playingTrack = bgm ? track : null
   }
 
   const stopBgm = (): void => {
-    bgmWanted = false
+    wantedTrack = null
     haltBgm()
   }
 
   const setMuted = (value: boolean): void => {
     muted = value
     if (muted) haltBgm()
-    else if (bgmWanted) startBgm()
+    else if (wantedTrack) startBgm(wantedTrack)
   }
 
   return { play, startBgm, stopBgm, setMuted }

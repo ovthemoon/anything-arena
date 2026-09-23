@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "wrangler types && tsc -b",
     "types": "wrangler types",
+    "sfx": "node scripts/gen-sfx.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf:secret": "wrangler secret put",
     "cf:tail": "wrangler tail"
