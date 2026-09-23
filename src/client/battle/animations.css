@@ -103,7 +103,12 @@
 .bubble::after { content: ''; position: absolute; bottom: -14px; width: 0; height: 0; border: 10px solid transparent; border-top: 14px solid #111; }
 .bubble--left::after  { left: 18%; }
 .bubble--right::after { right: 18%; }
-@media (orientation: portrait) { .weapon--bubble { width: 46%; bottom: 64%; } .bubble { font-size: 13px; } }
+@media (orientation: portrait) {
+  .weapon--bubble { width: 72%; bottom: 66%; }
+  .weapon--bubble.weapon--left { left: 4%; }
+  .weapon--bubble.weapon--right { right: 4%; }
+  .bubble { font-size: 14px; word-break: normal; overflow-wrap: break-word; }
+}
 
 /* 충격파 링 */
 .shockwave {
