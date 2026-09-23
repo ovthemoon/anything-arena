@@ -9,7 +9,8 @@ import type { ClientMessage } from '../../shared/schemas/messages'
 import type { ClientState } from '../state/match-reducer'
 import { newId } from '../lib/ids'
 import { CharacterSprite } from '../battle/CharacterSprite'
-import { ROSTER, poseUrl, type Character, type CharacterId } from '../battle/characters'
+import { ROSTER, hasCharacterArtwork, poseUrl, type Character, type CharacterId } from '../battle/characters'
+import { splitWeakPoints } from '../battle/weak-points'
 
 export interface LobbyScreenProps {
   state: ClientState
@@ -41,7 +42,7 @@ function useQrCode(url: string): string | null {
 
 /** 출연진 카드: 성격 2 · 아픈 곳 3 · 추천 한 마디 2 (긁기 배틀). */
 function CharacterCard({ card }: { card: WeaponProfile }) {
-  const weakPoints = card.weakness.split(',').map((w) => w.trim()).filter(Boolean)
+  const weakPoints = splitWeakPoints(card.weakness)
   return (
     <div className="wcard wcard--flip">
       <div className="wcard__name">{card.displayName}</div>
@@ -73,9 +74,10 @@ function RosterPick({ character, isOn, disabled, onPick }: { character: Characte
     <button type="button" className={`roster__pick${isOn ? ' is-on' : ''}`} disabled={disabled} onClick={onPick}>
       <div
         className="portrait"
-        style={{ backgroundImage: `url(${poseUrl(character.id, 'idle')})`, backgroundSize: `${character.portrait.zoom * 100}%`, backgroundPosition: `${character.portrait.x}% ${character.portrait.y}%` }}
+        style={{ backgroundImage: `url(${poseUrl(character.id, 'idle')})`, backgroundSize: hasCharacterArtwork(character.id) ? `${character.portrait.zoom * 100}%` : 'contain', backgroundPosition: hasCharacterArtwork(character.id) ? `${character.portrait.x}% ${character.portrait.y}%` : 'center' }}
       />
       <div className="roster__name">{character.name}</div>
+      {!hasCharacterArtwork(character.id) && <div className="muted">임시 실루엣</div>}
       <div className="roster__desc">{entry?.description ?? character.blurb}</div>
       {entry && (
         <div className="roster__weak">
@@ -93,7 +95,7 @@ function RosterPick({ character, isOn, disabled, onPick }: { character: Characte
 
 /** 좌석 위 소개 카드: 중계 화면과 휴대폰 모두에서 이름·설명·아픈 곳이 보인다. */
 function SeatCard({ card, side }: { card: WeaponProfile; side: 'left' | 'right' }) {
-  const weakPoints = card.weakness.split(',').map((w) => w.trim()).filter(Boolean)
+  const weakPoints = splitWeakPoints(card.weakness)
   return (
     <div className={`seat-card seat-card--${side}`}>
       <div className="seat-card__name">{card.displayName}</div>
@@ -132,7 +134,7 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
   const qr = useQrCode(joinUrl)
 
   const [nickname, setNickname] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const submitted = state.pendingWeaponRequestId !== null
 
   const myCharacter = you ? characterIds[you] : null
   const nickOk = countChars(nickname) <= LIMITS.NICKNAME
@@ -146,7 +148,6 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
       requestId: newId(),
       weapon: { nickname: nickname.trim() || name, characterId: myCharacter, character: name, weaponName: name, description: '' },
     })
-    setSubmitted(true)
   }
 
   const submitReady = () => {

@@ -33,12 +33,12 @@ const poseFor = (slot: PlayerSlot, winner: PlayerSlot | null | undefined): Pose 
 
 /** 결과: 승자·패자 자세, 최고 피해 공격, 재대결. */
 export function ResultScreen({ state, you, characterIds, send }: ResultScreenProps) {
+  const [rematchSent, setRematchSent] = useState(false)
   const match = state.match
   if (!match) return null
   const winner = match.winner ?? null
   const winnerName = winner ? match.players[winner]?.nickname ?? (winner === 'A' ? '왼쪽' : '오른쪽') : null
   const best = highestDamageAttack(state)
-  const [rematchSent, setRematchSent] = useState(false)
 
   return (
     <div className="arena">

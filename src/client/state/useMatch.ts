@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ClientMessage, ServerMessage } from '../../shared/schemas/messages'
 import { createSocket } from '../network/socket'
-import { initialClientState, reduce, type ClientState } from './match-reducer'
+import { initialClientState, reduce, reduceConnection, reduceOutgoing, type ClientState } from './match-reducer'
 
 export interface UseMatchResult {
   state: ClientState
@@ -12,15 +12,20 @@ export interface UseMatchResult {
 export function useMatch(roomCode: string | null): UseMatchResult {
   const [state, setState] = useState<ClientState>(initialClientState)
   const socketRef = useRef<ReturnType<typeof createSocket> | null>(null)
+  const stateRef = useRef(state)
+  const updateState = useCallback((update: (previous: ClientState) => ClientState) => {
+    stateRef.current = update(stateRef.current)
+    setState(stateRef.current)
+  }, [])
 
   useEffect(() => {
     if (!roomCode) return
 
-    setState(initialClientState)
+    updateState(() => initialClientState)
     const socket = createSocket(
       roomCode,
-      (message: ServerMessage) => setState((prev) => reduce(prev, message)),
-      (status) => setState((prev) => ({ ...prev, connection: status })),
+      (message: ServerMessage) => updateState((prev) => reduce(prev, message)),
+      (status) => updateState((prev) => reduceConnection(prev, status)),
     )
     socketRef.current = socket
 
@@ -28,9 +33,16 @@ export function useMatch(roomCode: string | null): UseMatchResult {
       socket.close()
       socketRef.current = null
     }
-  }, [roomCode])
+  }, [roomCode, updateState])
 
-  const send = useMemo(() => (message: ClientMessage) => socketRef.current?.send(message), [roomCode])
+  const send = useCallback((message: ClientMessage) => {
+    const socket = socketRef.current
+    if (!socket) return
+    const next = reduceOutgoing(stateRef.current, message)
+    if ((message.type === 'action_submit' || message.type === 'weapon_submit') && next === stateRef.current) return
+    updateState(() => next)
+    socket.send(message)
+  }, [updateState])
 
   return { state, send }
 }

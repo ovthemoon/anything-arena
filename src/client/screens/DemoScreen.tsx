@@ -110,6 +110,7 @@ export function DemoScreen() {
     },
     toast: null,
     lastActionId: null,
+    pendingWeaponRequestId: null,
     rejected: null,
   }
 

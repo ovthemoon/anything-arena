@@ -1,3 +1,4 @@
+import { splitWeakPoints } from './weak-points'
 import { useState } from 'react'
 import { LIMITS, countChars } from '../../shared/rules/limits'
 import type { PublicPlayer } from '../../shared/schemas/match'
@@ -39,7 +40,7 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
   const [shuffle, setShuffle] = useState(0)
   const suggestions = pickSuggestions(me?.weapon?.techniques ?? [], suggestionSeed, shuffle)
   const hasMore = (me?.weapon?.techniques.length ?? 0) > suggestions.length
-  const weakPoints = (opponentWeakness ?? '').split(',').map((w) => w.trim()).filter(Boolean)
+  const weakPoints = splitWeakPoints(opponentWeakness)
   const presetOnly = me?.presetOnly === true
   const submitted = me?.actionStatus === 'ACCEPTED' || me?.actionStatus === 'VALIDATING'
   const canAct = isInputOpen && !submitted
@@ -124,7 +125,7 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
         </div>
       )}
       <div className={`panel__note${rejected && !presetOnly ? ' is-error' : ''}`}>
-        {submitted && isInputOpen ? '제출 완료. 상대를 기다리는 중…' : note}
+        {submitted && isInputOpen ? (me?.actionStatus === 'VALIDATING' ? '공격을 확인하는 중…' : '제출 완료. 상대를 기다리는 중…') : note}
       </div>
     </div>
   )
