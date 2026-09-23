@@ -84,6 +84,8 @@ export const createOpenRouter = (apiKey: string, fetchImpl: typeof fetch = fetch
         model: opts.model,
         messages: [{ role: 'user', content: opts.prompt }],
         modalities: ['image', 'text'],
+        // 정사각형: 16:9 로 나오면 물건이 작게 잡힌다 (연출 세션 요청)
+        image_config: { aspect_ratio: '1:1' },
       }),
       signal: AbortSignal.timeout(opts.timeoutMs),
     })

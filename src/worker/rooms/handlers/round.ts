@@ -5,7 +5,7 @@ import type { PlayerSlot } from '../../../shared/schemas/enums'
 import { resolveRound, startRound, toPublic } from '../../game/engine'
 import { type RoomCtx, withTimeout } from '../room-context'
 
-const PLAYBACK_DELAY_MS = 3_000
+const PLAYBACK_DELAY_MS = 6_500 // 공격 1회 연출 ≈3초 × 2 (연출 설계 §3). 입력 15초를 연출이 잡아먹지 않게 서버가 기다린다.
 const COMMENTARY_VALID_MS = 6_000
 const COMMENTARY_TIMEOUT_MS = 5_000
 const TTS_TIMEOUT_MS = 8_000
