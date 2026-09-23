@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { LIMITS, countChars } from '../../shared/rules/limits'
-import { ROSTER as SHARED_ROSTER } from '../../shared/rules/roster'
+import { ROSTER as SHARED_ROSTER, type RosterEntry } from '../../shared/rules/roster'
 import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { PublicPlayer } from '../../shared/schemas/match'
 import type { WeaponProfile } from '../../shared/schemas/weapon'
@@ -9,7 +9,7 @@ import type { ClientMessage } from '../../shared/schemas/messages'
 import type { ClientState } from '../state/match-reducer'
 import { newId } from '../lib/ids'
 import { CharacterSprite } from '../battle/CharacterSprite'
-import { ROSTER, poseUrl, type CharacterId } from '../battle/characters'
+import { ROSTER, poseUrl, type Character, type CharacterId } from '../battle/characters'
 
 export interface LobbyScreenProps {
   state: ClientState
@@ -66,6 +66,31 @@ function CharacterCard({ card }: { card: WeaponProfile }) {
   )
 }
 
+/** 고르기 전에 이름·설명·아픈 곳을 다 보여준다. 출연진 설정이 아직 없는 캐릭터는 이름만. */
+function RosterPick({ character, isOn, disabled, onPick }: { character: Character; isOn: boolean; disabled: boolean; onPick: () => void }) {
+  const entry = SHARED_ROSTER[character.id] as RosterEntry | undefined
+  return (
+    <button type="button" className={`roster__pick${isOn ? ' is-on' : ''}`} disabled={disabled} onClick={onPick}>
+      <div
+        className="portrait"
+        style={{ backgroundImage: `url(${poseUrl(character.id, 'idle')})`, backgroundSize: `${character.portrait.zoom * 100}%`, backgroundPosition: `${character.portrait.x}% ${character.portrait.y}%` }}
+      />
+      <div className="roster__name">{character.name}</div>
+      <div className="roster__desc">{entry?.description ?? character.blurb}</div>
+      {entry && (
+        <div className="roster__weak">
+          <span className="muted">아픈 곳</span>
+          {entry.weakPoints.map((w) => (
+            <span key={w} className="wcard__chip is-weak">
+              {w}
+            </span>
+          ))}
+        </div>
+      )}
+    </button>
+  )
+}
+
 function Seat({ player, id, side }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right' }) {
   const label = player?.nickname ?? (player?.connected ? '캐릭터 고르는 중' : '빈 자리')
   return (
@@ -95,7 +120,7 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
 
   const enter = () => {
     if (!myCharacter || !nickOk) return
-    const name = SHARED_ROSTER[myCharacter].name
+    const name = (SHARED_ROSTER[myCharacter] as RosterEntry | undefined)?.name ?? myCharacter
     send({
       type: 'weapon_submit',
       requestId: newId(),
@@ -136,16 +161,9 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
           <div className="lobby__form">
             <div className="roster">
               {ROSTER.map((c) => (
-                <button key={c.id} type="button" className={`roster__pick${myCharacter === c.id ? ' is-on' : ''}`} disabled={submitted} onClick={() => onPickCharacter(c.id)}>
-                  <div
-                    className="portrait"
-                    style={{ backgroundImage: `url(${poseUrl(c.id, 'idle')})`, backgroundSize: `${c.portrait.zoom * 100}%`, backgroundPosition: `${c.portrait.x}% ${c.portrait.y}%` }}
-                  />
-                  {c.name}
-                </button>
+                <RosterPick key={c.id} character={c} isOn={myCharacter === c.id} disabled={submitted} onPick={() => onPickCharacter(c.id)} />
               ))}
             </div>
-            {myCharacter && <div className="muted">{SHARED_ROSTER[myCharacter].description}</div>}
             <input className="input" value={nickname} maxLength={LIMITS.NICKNAME * 2} placeholder={`닉네임 (${LIMITS.NICKNAME}자, 비우면 캐릭터 이름)`} onChange={(e) => setNickname(e.target.value)} disabled={submitted} />
             {state.rejected && <div className="err">닉네임을 확인해 주세요. 사람과 가족은 공격하지 마세요.</div>}
             <button type="button" className="btn" disabled={!canEnter} onClick={enter}>
