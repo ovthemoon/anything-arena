@@ -4,9 +4,9 @@ html, body { margin: 0; background: #08060d; overflow-x: hidden; }
 
 .screen { min-height: 100svh; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 30%, #2b2140 0%, #14111c 55%, #08060d 100%); color: #fff; font-family: var(--sans); padding: 16px; box-sizing: border-box; }
 .screen__box { width: min(720px, 100%); text-align: center; display: grid; gap: 1em; }
-/* 시작 화면: 골목 그림 위에 어둡게 한 겹 깔고, 글·버튼은 반투명 판 위에 올린다. */
+/* 시작 화면: 골목 그림 위에 어둡게 한 겹만 깔고, 글자는 그림자로 띄운다. */
 .screen--start { background: linear-gradient(180deg, rgba(8,6,13,.35) 0%, rgba(8,6,13,.55) 60%, rgba(8,6,13,.85) 100%), url('/assets/start-bg.jpg') center / cover no-repeat, #08060d; }
-.screen__box--panel { width: min(720px, calc(100vw - 32px)); justify-self: center; background: rgba(10,8,18,.72); border: 2px solid rgba(255,255,255,.85); border-radius: 16px; padding: clamp(16px, 3vw, 32px); backdrop-filter: blur(4px); box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.screen--start p { color: #f1ecff; text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 12px rgba(0,0,0,.8); }
 .screen h1 { font-size: clamp(28px, 6vw, 56px); color: #ffe259; text-shadow: 3px 3px 0 #000; margin: 0; line-height: 1.1; }
 .screen p { margin: 0; color: #cfc8dc; }
 .btn { background: #ffd400; color: #111; border: 3px solid #111; border-radius: 12px; font-weight: 900; font-size: clamp(16px, 2vw, 22px); padding: .6em 1.4em; cursor: pointer; }

@@ -40,7 +40,7 @@ export function StartScreen({ onNavigate }: { onNavigate: (path: string) => void
 
   return (
     <main className="screen screen--start">
-      <div className="screen__box screen__box--panel">
+      <div className="screen__box">
         <img className="start-logo" src="/assets/logo.png" alt="아무말 대난투" />
         <p>무기를 가져오세요. 강한 이유는 저희가 갖다 붙입니다.</p>
         <p className="muted">예: 젖은 양말 vs 배터리 1% 스마트폰</p>
