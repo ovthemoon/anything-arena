@@ -91,11 +91,31 @@ function RosterPick({ character, isOn, disabled, onPick }: { character: Characte
   )
 }
 
+/** 좌석 위 소개 카드: 중계 화면과 휴대폰 모두에서 이름·설명·아픈 곳이 보인다. */
+function SeatCard({ card, side }: { card: WeaponProfile; side: 'left' | 'right' }) {
+  const weakPoints = card.weakness.split(',').map((w) => w.trim()).filter(Boolean)
+  return (
+    <div className={`seat-card seat-card--${side}`}>
+      <div className="seat-card__name">{card.displayName}</div>
+      <div className="seat-card__desc">{card.tagline}</div>
+      <div className="seat-card__weak">
+        <span className="muted">아픈 곳</span>
+        {weakPoints.map((w) => (
+          <span key={w} className="wcard__chip is-weak">
+            {w}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Seat({ player, id, side }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right' }) {
   const label = player?.nickname ?? (player?.connected ? '캐릭터 고르는 중' : '빈 자리')
   return (
     <>
       <CharacterSprite id={player?.connected ? id : null} pose="idle" side={side} />
+      {player?.weapon && <SeatCard card={player.weapon} side={side} />}
       <div className={`seat-label seat-label--${side}`}>
         {label}
         {player?.ready ? ' ✓' : ''}

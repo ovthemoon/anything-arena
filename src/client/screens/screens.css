@@ -38,6 +38,15 @@ html, body { margin: 0; background: #08060d; overflow-x: hidden; }
 .spinner { width: 28px; height: 28px; border: 4px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin 900ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .qr { background: #fff; border-radius: 10px; padding: 6px; width: 140px; height: 140px; }
+.seat-card { position: absolute; top: 5%; width: min(30%, 300px); background: rgba(10,8,18,.88); border: 2px solid #fff; border-radius: 12px; padding: .6em .8em; display: grid; gap: .3em; z-index: 4; font-size: clamp(11px, 1.4vw, 16px); text-align: left; }
+.seat-card--left { left: 3%; }
+.seat-card--right { right: 3%; }
+.seat-card__name { font-weight: 900; font-size: 1.25em; color: #ffe259; }
+.seat-card__desc { line-height: 1.3; opacity: .9; }
+.seat-card__weak { display: flex; gap: .3em; flex-wrap: wrap; font-size: .85em; }
+@media (orientation: portrait) {
+  .seat-card { width: 46%; top: 2%; font-size: 11px; }
+}
 .seat-label { position: absolute; bottom: 3%; font-weight: 900; text-shadow: 2px 2px 0 #000; font-size: clamp(13px, 1.8vw, 22px); z-index: 4; }
 .seat-label--left { left: 8%; }
 .seat-label--right { right: 8%; }
