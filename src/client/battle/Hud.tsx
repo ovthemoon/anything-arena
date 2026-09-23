@@ -1,6 +1,7 @@
 import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { PublicPlayer } from '../../shared/schemas/match'
-import { characterOf, poseUrl, type CharacterId } from './characters'
+import { characterOf, hasCharacterArtwork, poseUrl, type CharacterId } from './characters'
+import { splitWeakPoints } from './weak-points'
 
 export interface HudProps {
   players: Partial<Record<PlayerSlot, PublicPlayer>>
@@ -21,8 +22,8 @@ function Portrait({ id }: { id: CharacterId | null }) {
       className="portrait"
       style={{
         backgroundImage: `url(${poseUrl(id, 'idle')})`,
-        backgroundSize: `${portrait.zoom * 100}%`,
-        backgroundPosition: `${portrait.x}% ${portrait.y}%`,
+        backgroundSize: hasCharacterArtwork(id) ? `${portrait.zoom * 100}%` : 'contain',
+        backgroundPosition: hasCharacterArtwork(id) ? `${portrait.x}% ${portrait.y}%` : 'center',
       }}
     />
   )
@@ -34,6 +35,7 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
   const name = player?.nickname ?? (id ? characterOf(id).name : '대기 중')
   const tagline = player?.weapon?.tagline ?? (player?.weapon?.displayName ? '' : id ? characterOf(id).blurb : '')
   const fouls = player?.fouls ?? 0
+  const weakPoints = splitWeakPoints(player?.weapon?.weakness)
   return (
     <div className={`hud__side hud__side--${side}`}>
       <Portrait id={id} />
@@ -53,6 +55,16 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
           {player?.weapon?.displayName && player.weapon.displayName !== player.weapon.characterName && <span className="hud__weapon">· {player.weapon.displayName}</span>}
         </div>
         <div className="hud__tag">{tagline}</div>
+        {weakPoints.length > 0 && (
+          <div className="hud__weak">
+            <span className="hud__weak-label">아픈 곳</span>
+            {weakPoints.map((w) => (
+              <span key={w} className="hud__weak-chip">
+                {w}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

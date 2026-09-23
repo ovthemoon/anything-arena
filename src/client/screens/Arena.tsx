@@ -77,28 +77,34 @@ function useCommentaryAudio(state: ClientState, muted: boolean) {
 interface FoulOverlayState {
   slot: PlayerSlot
   fouls: number
+  matchId: string
 }
 
 /** 양쪽 fouls 가 오르면 카드 오버레이 + 호루라기. 원문은 절대 표시하지 않는다. */
 function useFoulOverlay(state: ClientState, sfx: SfxPlayer): FoulOverlayState | null {
   const prev = useRef<Record<PlayerSlot, number>>({ A: 0, B: 0 })
   const [overlay, setOverlay] = useState<FoulOverlayState | null>(null)
+  const matchId = state.match?.matchId
   useEffect(() => {
     const players = state.match?.players
-    if (!players) return
+    if (!players || !matchId) return
     for (const slot of ['A', 'B'] as const) {
       const fouls = players[slot]?.fouls ?? 0
       if (fouls > prev.current[slot]) {
         prev.current = { ...prev.current, [slot]: fouls }
-        setOverlay({ slot, fouls })
+        setOverlay({ slot, fouls, matchId })
         sfx.play('whistle')
-        const t = window.setTimeout(() => setOverlay(null), FOUL_OVERLAY_MS)
-        return () => window.clearTimeout(t)
       }
       if (fouls < prev.current[slot]) prev.current = { ...prev.current, [slot]: fouls }
     }
-  }, [state.match?.players, sfx])
-  return overlay
+  }, [state.match?.players, matchId, sfx])
+  // Player snapshots must not cancel the lifetime of an already visible warning.
+  useEffect(() => {
+    if (!overlay) return
+    const timer = window.setTimeout(() => setOverlay(null), FOUL_OVERLAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [overlay])
+  return overlay?.matchId === matchId ? overlay : null
 }
 
 function useStageWidth(): [React.RefObject<HTMLDivElement | null>, number] {
