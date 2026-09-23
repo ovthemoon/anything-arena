@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { outcomeCue, resultCue, roundStartCue } from '../../../src/client/audio/cues'
+import { bgmTrackFor, outcomeCue, resultCue, roundStartCue } from '../../../src/client/audio/cues'
 
 describe('outcomeCue', () => {
   test.each([
@@ -9,6 +9,17 @@ describe('outcomeCue', () => {
     ['MISS', 'miss'],
   ] as const)('%s → %s', (outcome, cue) => {
     expect(outcomeCue(outcome)).toBe(cue)
+  })
+})
+
+describe('bgmTrackFor', () => {
+  test('battle beats lobby; nothing otherwise', () => {
+    expect(bgmTrackFor({ isLobby: true, isBattle: false, isSilenced: false })).toBe('lobby')
+    expect(bgmTrackFor({ isLobby: false, isBattle: true, isSilenced: false })).toBe('battle')
+    expect(bgmTrackFor({ isLobby: false, isBattle: false, isSilenced: false })).toBeNull()
+  })
+  test('the finishing-blow silence cuts the music even mid-battle', () => {
+    expect(bgmTrackFor({ isLobby: false, isBattle: true, isSilenced: true })).toBeNull()
   })
 })
 

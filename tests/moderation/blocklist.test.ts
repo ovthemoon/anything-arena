@@ -21,3 +21,21 @@ describe('blocklist', () => {
     expect(normalize('씨. 발!')).toContain('씨발')
   })
 })
+
+describe('blocklist (en)', () => {
+  test('catches english slurs and family insults in an english room', () => {
+    expect(hitsBlocklist('you f u c k', 'en')).toBe(true)
+    expect(hitsBlocklist('Your MOM is ugly', 'en')).toBe(true)
+    expect(hitsBlocklist('kys', 'en')).toBe(true)
+  })
+  test('does not false-positive on innocuous english', () => {
+    expect(hitsBlocklist('my class is hell of a shell', 'en')).toBe(false)
+    expect(hitsBlocklist('wet sock', 'en')).toBe(false)
+  })
+  test('korean slurs are still blocked in an english room', () => {
+    expect(hitsBlocklist('ㅅㅂ', 'en')).toBe(true)
+  })
+  test('english list is not applied to korean rooms', () => {
+    expect(hitsBlocklist('kys')).toBe(false)
+  })
+})

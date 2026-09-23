@@ -1,5 +1,6 @@
 import type { PlayerSlot } from '../../../shared/schemas/enums'
-import { DEFAULT_CHARACTER_FOR_SLOT, ROSTER, characterCard } from '../../../shared/rules/roster'
+import { DEFAULT_CHARACTER_FOR_SLOT, characterCard, rosterEntry } from '../../../shared/rules/roster'
+import { DEFAULT_LANG, type Lang } from '../../../shared/i18n/lang'
 import { type EngineState, setConnected, setReady, setWeapon } from '../../game/engine'
 import type { RoomCtx } from '../room-context'
 import { handleActionSubmit } from './action'
@@ -7,14 +8,14 @@ import { handleActionSubmit } from './action'
 /** AI 대전 봇은 항상 B 좌석. 사람은 A 로 들어온다. */
 export const BOT_SLOT: PlayerSlot = 'B'
 
-export const botNickname = (slot: PlayerSlot): string => `AI ${ROSTER[DEFAULT_CHARACTER_FOR_SLOT[slot]].name}`
+export const botNickname = (slot: PlayerSlot, lang: Lang = DEFAULT_LANG): string => `AI ${rosterEntry(DEFAULT_CHARACTER_FOR_SLOT[slot], lang).name}`
 
 /** 봇 좌석에 출연진 카드를 쥐여 주고 준비 완료로 만든다. 이미 준비됐으면 그대로. */
 export const armBot = (s: EngineState, now: number): EngineState => {
   const bot = s.botSlot
   if (!bot || s.players[bot].ready) return s
-  const card = characterCard(DEFAULT_CHARACTER_FOR_SLOT[bot], s.matchId)
-  return setReady(setConnected(setWeapon(s, bot, card, botNickname(bot)), bot, true), bot, now)
+  const card = characterCard(DEFAULT_CHARACTER_FOR_SLOT[bot], s.matchId, s.lang)
+  return setReady(setConnected(setWeapon(s, bot, card, botNickname(bot, s.lang)), bot, true), bot, now)
 }
 
 /** 라운드마다 추천 한 마디 2개를 번갈아 던진다. 판정·캐시는 사람과 같은 경로. */

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BANNER_MS, bannerStageAt, type BannerStage } from './round-banner'
-
-const FIGHT_TEXT = '싸워!'
+import { useT } from '../i18n/LangContext'
 
 /** roundId 가 바뀌어 입력이 열릴 때마다 "ROUND N" → "싸워!" 를 잠깐 보여준다. */
 export function useRoundBanner(roundId: number, isInputOpen: boolean): BannerStage | null {
@@ -23,10 +22,11 @@ export function useRoundBanner(roundId: number, isInputOpen: boolean): BannerSta
 }
 
 export function RoundBanner({ stage, roundId }: { stage: BannerStage | null; roundId: number }) {
+  const t = useT()
   if (!stage) return null
   return (
     <div className="banner" aria-live="polite">
-      {stage === 'round' ? <div className="banner__round">ROUND {roundId}</div> : <div className="banner__fight">{FIGHT_TEXT}</div>}
+      {stage === 'round' ? <div className="banner__round">{t.hud.round(roundId)}</div> : <div className="banner__fight">{t.battle.fight}</div>}
     </div>
   )
 }

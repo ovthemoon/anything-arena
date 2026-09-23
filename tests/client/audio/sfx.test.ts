@@ -1,10 +1,11 @@
 import { describe, expect, test, vi } from 'vitest'
-import { BGM_PATHS, BGM_VOLUME, SFX_PATHS, SFX_VOLUME, createSfxPlayer } from '../../../src/client/audio/sfx'
+import { BGM_DUCKED_VOLUME, BGM_PATHS, BGM_VOLUME, SFX_PATHS, SFX_VOLUME, createSfxPlayer } from '../../../src/client/audio/sfx'
 
 const makeDeps = () => {
   const stop = vi.fn()
-  const play = vi.fn().mockReturnValue({ stop })
-  return { play, stop }
+  const setVolume = vi.fn()
+  const play = vi.fn().mockReturnValue({ stop, setVolume })
+  return { play, stop, setVolume }
 }
 
 describe('SfxPlayer', () => {
@@ -88,6 +89,29 @@ describe('SfxPlayer', () => {
   test('background music sits well under the effects', () => {
     expect(BGM_VOLUME).toBeLessThanOrEqual(0.2)
     expect(BGM_VOLUME).toBeLessThan(SFX_VOLUME)
+  })
+
+  test('ducking lowers the running bgm and restores it', () => {
+    const { play, setVolume } = makeDeps()
+    const sfx = createSfxPlayer({ play })
+    sfx.startBgm('battle')
+    sfx.setDucked(true)
+    expect(setVolume).toHaveBeenLastCalledWith(BGM_DUCKED_VOLUME)
+    sfx.setDucked(false)
+    expect(setVolume).toHaveBeenLastCalledWith(BGM_VOLUME)
+    expect(BGM_DUCKED_VOLUME).toBeLessThan(BGM_VOLUME)
+  })
+
+  test('bgm started while ducked begins at the ducked volume', () => {
+    const { play } = makeDeps()
+    const sfx = createSfxPlayer({ play })
+    sfx.setDucked(true)
+    sfx.startBgm('battle')
+    expect(play).toHaveBeenCalledWith(BGM_PATHS.battle, { loop: true, volume: BGM_DUCKED_VOLUME })
+  })
+
+  test('the round bell has a file', () => {
+    expect(SFX_PATHS.bell).toMatch(/\.mp3$/)
   })
 
   test('a throwing play dep never escapes', () => {

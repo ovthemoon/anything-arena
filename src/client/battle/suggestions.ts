@@ -32,3 +32,15 @@ export const pickSuggestions = <T>(items: readonly T[], seed: string, offset: nu
   const order = items.map((item, i) => ({ item, key: random(), i })).sort((a, b) => a.key - b.key || a.i - b.i)
   return order.slice(0, count).map((o) => o.item)
 }
+
+/**
+ * 상대의 아픈 곳을 겨냥한 추천(hitsWeakPoint)이 있으면 그것을 2개, 자기 목소리 대사를 1개 섞는다.
+ * 겨냥한 게 없으면(자유 입력 무기, 매치업 표 없음) 전체에서 고른다.
+ */
+export const pickTargetedSuggestions = <T extends { hitsWeakPoint?: boolean }>(items: readonly T[], seed: string, offset: number, count = SUGGESTION_COUNT): T[] => {
+  const targeted = items.filter((t) => t.hitsWeakPoint)
+  if (targeted.length === 0) return pickSuggestions(items, seed, offset, count)
+  const others = items.filter((t) => !t.hitsWeakPoint)
+  const targetedCount = Math.min(targeted.length, count - (others.length > 0 ? 1 : 0))
+  return [...pickSuggestions(targeted, seed, offset, targetedCount), ...pickSuggestions(others, seed, offset, count - targetedCount)]
+}

@@ -21,6 +21,8 @@ export const PreparedTechnique = z.object({
   name: z.string().min(1).max(20),
   actionText: bounded(LIMITS.ACTION_TEXT),
   animation: AnimationType,
+  /** 이번 상대의 아픈 곳을 겨냥해 고른 추천이면 true. 휴대폰 추천 칩이 먼저 보여준다. */
+  hitsWeakPoint: z.boolean().optional(),
 })
 export type PreparedTechnique = z.infer<typeof PreparedTechnique>
 

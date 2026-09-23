@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PlayerSlot } from '../../shared/schemas/enums'
-import type { RoundResolved } from '../../shared/schemas/match'
-import { createBrowserAudioManager } from '../audio/AudioManager'
+import type { AttackEvent, RoundResolved } from '../../shared/schemas/match'
+import { COMMENTARY_HOLD_MAX_MS, createBrowserAudioManager } from '../audio/AudioManager'
 import { useMatch } from '../state/useMatch'
 import type { ClientState } from '../state/match-reducer'
 import { characterIdFor, type CharacterId } from '../battle/characters'
 import { usePlayback } from '../battle/usePlayback'
 import { usePrefs } from '../battle/usePrefs'
 import { useSfx } from '../audio/useSfx'
+import { roastVoicePath } from '../audio/roast-voice'
 import type { SfxPlayer } from '../audio/sfx'
 import { matchEndKind } from '../battle/finishing'
 import { matchEndStage } from '../battle/match-end'
@@ -18,6 +19,9 @@ import { ResultScreen } from './ResultScreen'
 import '../battle/animations.css'
 import '../battle/ui.css'
 import './screens.css'
+import { LangProvider } from '../i18n/LangContext'
+import { stringsFor } from '../i18n/strings'
+import { readLangPref } from '../i18n/pref'
 
 export interface ArenaProps {
   roomCode: string
@@ -27,20 +31,21 @@ export interface ArenaProps {
 
 const FOUL_OVERLAY_MS = 2600
 const KO_CUTIN_MS = 1600
-const FOUL_TEXT = '삐익! 인신공격 반칙입니다. 무기로 승부하세요.'
-const FOUL_LOCK_TEXT = '자유 입력이 잠겼습니다. 이번 경기는 기본 공격으로 진행됩니다.'
 
 /** 같은 방 참가 요청은 탭당 한 번. StrictMode 이중 실행·재마운트에서도 재사용. */
-const joinInFlight = new Map<string, Promise<string | null>>()
-const joinRoom = (roomCode: string): Promise<string | null> => {
+/** 참가 실패 사유. 문구는 렌더 시점에 언어에 맞춰 만든다. */
+type JoinError = { kind: 'http'; status: number; message: string | null } | { kind: 'network' }
+const joinInFlight = new Map<string, Promise<JoinError | null>>()
+
+const joinRoom = (roomCode: string): Promise<JoinError | null> => {
   const existing = joinInFlight.get(roomCode)
   if (existing) return existing
-  const p = fetch(`/api/rooms/${roomCode}/join`, { method: 'POST', credentials: 'same-origin' })
+  const p: Promise<JoinError | null> = fetch(`/api/rooms/${roomCode}/join`, { method: 'POST', credentials: 'same-origin' })
     .then(async (r) => {
       const body = (await r.json().catch(() => null)) as { error?: string | null } | null
-      return r.ok ? null : (body?.error ?? `참가 실패 (${r.status})`)
+      return r.ok ? null : { kind: 'http' as const, status: r.status, message: body?.error ?? null }
     })
-    .catch(() => '참가 요청 실패 (네트워크)')
+    .catch(() => ({ kind: 'network' as const }))
   joinInFlight.set(roomCode, p)
   return p
 }
@@ -124,7 +129,9 @@ function useStageWidth(): [React.RefObject<HTMLDivElement | null>, number] {
 /** 역할(SCREEN/A/B)과 phase 에 따라 화면을 고르는 컨테이너. 상태는 useMatch 만. */
 export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   const [joined, setJoined] = useState(!autoJoin)
-  const [joinError, setJoinError] = useState<string | null>(null)
+  const [joinError, setJoinError] = useState<JoinError | null>(null)
+  /** 방 언어가 스냅샷으로 오기 전까지는 이 기기의 선택을 쓴다. */
+  const [prefLang] = useState(readLangPref)
   useEffect(() => {
     if (!autoJoin) return
     let cancelled = false
@@ -147,7 +154,9 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   useEffect(() => {
     if (state.playback) setHeld(state.playback)
   }, [state.playback])
-  const playback = usePlayback(held, prefs.reducedMotion)
+  // 해설 음성이 끝날 때까지 다음 공격을 기다린다 (최대 COMMENTARY_HOLD_MAX_MS)
+  const holdForCommentary = useCallback((attack: AttackEvent) => audioManager.waitForCommentary(attack.eventId, COMMENTARY_HOLD_MAX_MS), [audioManager])
+  const playback = usePlayback(held, prefs.reducedMotion, holdForCommentary)
   useEffect(() => {
     if (playback.done && !state.playback) setHeld(null)
   }, [playback.done, state.playback])
@@ -155,6 +164,14 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   useEffect(() => {
     if (playback.step === 'commentary' && playback.attack) audioManager.playScheduled(playback.attack.eventId)
   }, [playback.step, playback.attack?.eventId, audioManager])
+  // 추천 한 마디를 그대로 썼으면 미리 녹음한 목소리를 말풍선('name') 장면에서 튼다. 고친 문장·자유 입력은 자막만.
+  // 녹음된 목소리는 한국어 카드만 있다. 영어 방은 자막만.
+  const roastVoice = playback.attack && (state.match?.lang ?? prefLang) === 'ko'
+    ? roastVoicePath(state.match?.players[playback.attack.actor]?.weapon?.techniques, playback.attack.approvedActionText)
+    : null
+  useEffect(() => {
+    if (playback.step === 'name' && roastVoice && playback.attack) audioManager.playLine(playback.attack.eventId, roastVoice)
+  }, [playback.step, playback.attack?.eventId, roastVoice, audioManager])
   useEffect(() => {
     if (!state.match || state.match.phase === 'LOBBY' || state.match.phase === 'PREPARING') setHeld(null)
   }, [state.match?.matchId, state.match?.phase])
@@ -188,23 +205,29 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   const isLobby = match !== null && !isBattle && !isFinished
   const sfx = useSfx({ state, playback, muted: !prefs.soundOn, you, isLobby, isBattle, isFinished })
   const foul = useFoulOverlay(state, sfx)
+  const lang = match?.lang ?? prefLang
+  const t = stringsFor(lang)
 
   if (joinError) {
+    const message = joinError.kind === 'network' ? t.arena.joinNetworkError : joinError.message ?? t.arena.joinFailed(joinError.status)
     return (
-      <main className="screen">
-        <div className="screen__box">
-          <h1>입장 실패</h1>
-          <p className="err">{joinError}</p>
-        </div>
-      </main>
+      <LangProvider lang={lang}>
+        <main className="screen">
+          <div className="screen__box">
+            <h1>{t.arena.joinFailedTitle}</h1>
+            <p className="err">{message}</p>
+          </div>
+        </main>
+      </LangProvider>
     )
   }
 
   return (
+    <LangProvider lang={lang}>
     <div ref={stageRef} className="arena" style={{ position: 'relative' }}>
       {!match && (
         <div className="subtitle" style={{ bottom: '48%' }}>
-          {state.connection === 'reconnecting' ? '다시 연결하는 중…' : '연결 중…'}
+          {state.connection === 'reconnecting' ? t.arena.reconnecting : t.arena.connecting}
         </div>
       )}
       {match && !isBattle && !isFinished && (
@@ -218,7 +241,7 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
         <div className="foul">
           <div>
             <div className={`foul__card${foul.fouls >= 2 ? ' is-red' : ''}`} style={{ margin: '0 auto' }} />
-            <div className="foul__text">{foul.fouls >= 2 ? FOUL_LOCK_TEXT : FOUL_TEXT}</div>
+            <div className="foul__text">{foul.fouls >= 2 ? t.arena.foulLock : t.arena.foul}</div>
           </div>
         </div>
       )}
@@ -226,12 +249,13 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
 
       <div style={{ position: 'absolute', top: 4, right: 8, zIndex: 10, fontSize: 12, opacity: 0.8 }}>
         <label style={{ marginRight: 8 }}>
-          <input type="checkbox" checked={prefs.soundOn} onChange={(e) => prefs.setSoundOn(e.target.checked)} /> 소리
+          <input type="checkbox" checked={prefs.soundOn} onChange={(e) => prefs.setSoundOn(e.target.checked)} /> {t.arena.sound}
         </label>
         <label>
-          <input type="checkbox" checked={prefs.shakeOn} onChange={(e) => prefs.setShakeOn(e.target.checked)} /> 흔들림
+          <input type="checkbox" checked={prefs.shakeOn} onChange={(e) => prefs.setShakeOn(e.target.checked)} /> {t.arena.shake}
         </label>
       </div>
     </div>
+    </LangProvider>
   )
 }

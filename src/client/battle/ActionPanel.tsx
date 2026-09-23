@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { LIMITS, countChars } from '../../shared/rules/limits'
 import type { PublicPlayer } from '../../shared/schemas/match'
 import type { RejectedInfo } from '../state/match-reducer'
-import { pickSuggestions } from './suggestions'
+import { pickTargetedSuggestions } from './suggestions'
+import { useT } from '../i18n/LangContext'
+import type { Strings } from '../i18n/strings'
 
 export interface ActionPanelProps {
   me: PublicPlayer | undefined
@@ -20,25 +22,26 @@ export interface ActionPanelProps {
   onTechnique: (techniqueId: string) => void
 }
 
-const REJECT_NOTES: Record<string, string> = {
-  REWRITE: '표현을 바꿔주세요. 무기로 승부하세요.',
-  MODERATION: '삐익! 인신공격 반칙입니다. 무기로 승부하세요.',
-  FOUL: '삐익! 인신공격 반칙입니다. 무기로 승부하세요.',
-  OUTSIDE_CAPABILITY: '이 무기로는 할 수 없는 행동이에요. 다르게 써볼까요?',
-  SYSTEM_INSTRUCTION: '그건 공격이 아니에요. 무기로 승부하세요.',
-  TIMEOUT: '연결 지연으로 기본 공격을 사용했습니다.',
-}
+const rejectNotes = (t: Strings['action']): Record<string, string> => ({
+  REWRITE: t.rejectRewrite,
+  MODERATION: t.rejectModeration,
+  FOUL: t.rejectFoul,
+  OUTSIDE_CAPABILITY: t.rejectOutsideCapability,
+  SYSTEM_INSTRUCTION: t.rejectSystemInstruction,
+  TIMEOUT: t.rejectTimeout,
+})
 
-const noteFor = (rejected: RejectedInfo | null): string | null => {
+const noteFor = (rejected: RejectedInfo | null, t: Strings['action']): string | null => {
   if (!rejected) return null
-  return REJECT_NOTES[rejected.reasonCode] ?? '입력이 거절됐어요. 다시 써주세요.'
+  return rejectNotes(t)[rejected.reasonCode] ?? t.rejectDefault
 }
 
 /** 하단: 상대 아픈 곳 힌트·자유 입력·공격. 추천 한 마디는 입력창을 채우기만 한다. presetOnly(반칙 2회)면 직접 입력을 잠그고 추천 중 골라서만 공격. */
 export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen, isCollapsed, commentaryText, rejected, onFreeText, onTechnique }: ActionPanelProps) {
   const [text, setText] = useState('')
   const [shuffle, setShuffle] = useState(0)
-  const suggestions = pickSuggestions(me?.weapon?.techniques ?? [], suggestionSeed, shuffle)
+  const t = useT().action
+  const suggestions = pickTargetedSuggestions(me?.weapon?.techniques ?? [], suggestionSeed, shuffle)
   const hasMore = (me?.weapon?.techniques.length ?? 0) > suggestions.length
   const weakPoints = splitWeakPoints(opponentWeakness)
   const presetOnly = me?.presetOnly === true
@@ -46,7 +49,7 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
   const canAct = isInputOpen && !submitted
   const chars = countChars(text)
   const freeInvalid = chars === 0 || chars > LIMITS.ACTION_TEXT
-  const note = presetOnly ? '반칙 2회. 직접 입력은 잠겼습니다. 아래 한 마디 중 골라서 공격하세요.' : noteFor(rejected)
+  const note = presetOnly ? t.presetOnly : noteFor(rejected, t)
 
   const submitFree = () => {
     if (!canAct || presetOnly || freeInvalid) return
@@ -66,7 +69,7 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
       </div>
       {weakPoints.length > 0 && (
         <div className="hint">
-          <span className="muted">상대 아픈 곳</span>
+          <span className="muted">{t.opponentWeakPoints}</span>
           {weakPoints.map((w) => (
             <span key={w} className="wcard__chip is-weak">
               {w}
@@ -85,11 +88,11 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
           value={text}
           disabled={!canAct || presetOnly}
           maxLength={LIMITS.ACTION_TEXT * 2}
-          placeholder={presetOnly ? '자유 입력이 잠겼습니다' : '한 마디로 긁어라 (뻔한 칼·주먹은 0점)'}
+          placeholder={presetOnly ? t.inputLocked : t.inputPlaceholder}
           onChange={(e) => setText(e.target.value)}
         />
         <button type="submit" className="attack-btn" disabled={!canAct || presetOnly || freeInvalid}>
-          공격!
+          {t.attack}
           <span className="panel__count">
             {chars}/{LIMITS.ACTION_TEXT}
           </span>
@@ -104,14 +107,14 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
           ))}
           {hasMore && (
             <button type="button" className="chip-btn" onClick={() => setShuffle((n) => n + 1)}>
-              🔀 다른 거
+              {t.shuffle}
             </button>
           )}
         </div>
       )}
       {suggestions.length > 0 && !presetOnly && (
         <div className="hint">
-          <span className="muted">말이 안 떠오르면</span>
+          <span className="muted">{t.noIdea}</span>
           {suggestions.map((t) => (
             <button key={t.id} type="button" className="chip-btn" disabled={!canAct} title={t.actionText} onClick={() => setText(t.actionText)}>
               {t.name}
@@ -119,13 +122,13 @@ export function ActionPanel({ me, opponentWeakness, suggestionSeed, isInputOpen,
           ))}
           {hasMore && (
             <button type="button" className="chip-btn" onClick={() => setShuffle((n) => n + 1)}>
-              🔀 다른 거
+              {t.shuffle}
             </button>
           )}
         </div>
       )}
       <div className={`panel__note${rejected && !presetOnly ? ' is-error' : ''}`}>
-        {submitted && isInputOpen ? (me?.actionStatus === 'VALIDATING' ? '공격을 확인하는 중…' : '제출 완료. 상대를 기다리는 중…') : note}
+        {submitted && isInputOpen ? (me?.actionStatus === 'VALIDATING' ? t.validating : t.submitted) : note}
       </div>
     </div>
   )

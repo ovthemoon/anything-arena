@@ -1,4 +1,8 @@
 import { useState } from 'react'
+import type { Lang } from '../../shared/i18n/lang'
+import { LangProvider } from '../i18n/LangContext'
+import { readLangPref, writeLangPref } from '../i18n/pref'
+import { stringsFor } from '../i18n/strings'
 import './screens.css'
 
 interface ApiEnvelope<T> {
@@ -12,21 +16,36 @@ async function postJson<T>(url: string): Promise<ApiEnvelope<T>> {
   return (await res.json()) as ApiEnvelope<T>
 }
 
-/** 시작 화면: 방 만들기(PC 중계 화면) / 코드로 참가(휴대폰). PRD §11. */
+/** 방 만들기 주소. 언어는 방 전체(카드·AI·문구)가 따르므로 만들 때 함께 보낸다. */
+export const createRoomUrl = (mode: 'pvp' | 'solo', lang: Lang): string => {
+  const params = new URLSearchParams({ lang })
+  if (mode === 'solo') params.set('mode', 'solo')
+  return `/api/rooms?${params.toString()}`
+}
+
+/** 시작 화면: 방 만들기(PC 중계 화면) / 코드로 참가(휴대폰). PRD §11. 언어 토글은 이 기기에 저장되고 새 방에 적용된다. */
 export function StartScreen({ onNavigate }: { onNavigate: (path: string) => void }) {
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [lang, setLang] = useState<Lang>(readLangPref)
+  const t = stringsFor(lang)
+
+  const toggleLang = () => {
+    const next: Lang = lang === 'ko' ? 'en' : 'ko'
+    writeLangPref(next)
+    setLang(next)
+  }
 
   const createRoom = async (mode: 'pvp' | 'solo' = 'pvp') => {
     setError(null)
     setBusy(true)
     try {
-      const res = await postJson<{ roomCode: string; joinUrl: string }>(mode === 'solo' ? '/api/rooms?mode=solo' : '/api/rooms')
+      const res = await postJson<{ roomCode: string; joinUrl: string }>(createRoomUrl(mode, lang))
       if (res.success && res.data) onNavigate(`/screen/${res.data.roomCode}`)
-      else setError(res.error ?? '방을 만들지 못했어요. 다시 시도해 주세요.')
+      else setError(res.error ?? t.start.createFailed)
     } catch {
-      setError('네트워크 오류. 연결을 확인해 주세요.')
+      setError(t.start.networkError)
     } finally {
       setBusy(false)
     }
@@ -39,33 +58,38 @@ export function StartScreen({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   return (
-    <main className="screen screen--start">
-      <div className="screen__box">
-        <img className="start-logo" src="/assets/logo.png" alt="아무말 대난투" />
-        <p>무기를 가져오세요. 강한 이유는 저희가 갖다 붙입니다.</p>
-        <p className="muted">예: 젖은 양말 vs 배터리 1% 스마트폰</p>
-        <div className="row">
-          <button type="button" className="btn" disabled={busy} onClick={() => createRoom()}>
-            방 만들기 (중계 화면)
-          </button>
-          <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => createRoom('solo')}>
-            AI와 대전
-          </button>
+    <LangProvider lang={lang}>
+      <main className="screen screen--start">
+        <button type="button" className="btn btn--ghost lang-toggle" onClick={toggleLang} aria-label={t.langToggle}>
+          🌐 {t.langToggle}
+        </button>
+        <div className="screen__box">
+          <img className="start-logo" src="/assets/logo.png" alt={t.appTitle} />
+          <p>{t.start.tagline}</p>
+          <p className="muted">{t.start.example}</p>
+          <div className="row">
+            <button type="button" className="btn" disabled={busy} onClick={() => createRoom()}>
+              {t.start.createRoom}
+            </button>
+            <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => createRoom('solo')}>
+              {t.start.soloRoom}
+            </button>
+          </div>
+          <form
+            className="row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              joinRoom()
+            }}
+          >
+            <input className="input" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder={t.start.codePlaceholder} />
+            <button type="submit" className="btn btn--ghost">
+              {t.start.join}
+            </button>
+          </form>
+          {error && <p className="err">{error}</p>}
         </div>
-        <form
-          className="row"
-          onSubmit={(e) => {
-            e.preventDefault()
-            joinRoom()
-          }}
-        >
-          <input className="input" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="방 코드" />
-          <button type="submit" className="btn btn--ghost">
-            코드로 참가
-          </button>
-        </form>
-        {error && <p className="err">{error}</p>}
-      </div>
-    </main>
+      </main>
+    </LangProvider>
   )
 }

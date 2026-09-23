@@ -22,7 +22,8 @@ type JudgeOutcome = { judge: JudgeResult } | { failed: 'JUDGE_FAILED' | 'INVALID
 
 const runJudge = async (ctx: RoomCtx, attacker: WeaponProfile, defender: WeaponProfile, actionText: string): Promise<JudgeOutcome> => {
   try {
-    const raw = await withTimeout(ctx.ai.judgeAction({ attacker, defender, actionText, rulesetVersion: ctx.getState().rulesetVersion }), JUDGE_TIMEOUT_MS)
+    const { rulesetVersion, lang } = ctx.getState()
+    const raw = await withTimeout(ctx.ai.judgeAction({ attacker, defender, actionText, rulesetVersion, lang }), JUDGE_TIMEOUT_MS)
     const parsed = JudgeResult.safeParse(raw)
     return parsed.success ? { judge: parsed.data } : { failed: 'INVALID_RESULT' }
   } catch (e) {

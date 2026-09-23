@@ -13,7 +13,7 @@ import { WeaponSprite, type WeaponPhase } from '../battle/WeaponSprite'
 import { displayedHp } from '../battle/hp-display'
 import { outcomeFx, outcomeOf, weaponImageUrlOf } from '../battle/outcome'
 import { STEP_MS, buildAttackTimeline, type StepKind } from '../battle/timeline'
-import { FROZEN_ACTION } from '../../shared/rules/constants'
+import { useLang, useT } from '../i18n/LangContext'
 import type { PlaybackState } from '../battle/usePlayback'
 import type { Pose, CharacterId } from '../battle/characters'
 import type { Prefs } from '../battle/usePrefs'
@@ -35,9 +35,8 @@ const sideOf = (slot: PlayerSlot): 'left' | 'right' => (slot === 'A' ? 'left' : 
 
 const ACTOR_ATTACK_STEPS: readonly StepKind[] = ['windup', 'travel', 'freeze', 'result']
 
-/** 시간 초과로 아무 말도 못 한 공격. 공격 자세 없이 말풍선만 제자리에서 떤다. */
-const isFrozenAttack = (attack: AttackEvent | null): boolean => attack?.techniqueLabel === FROZEN_ACTION.label
-const FROZEN_LABEL = '얼어붙음!'
+/** 시간 초과로 아무 말도 못 한 공격. 공격 자세 없이 말풍선만 제자리에서 떤다. 라벨은 언어마다 달라 fallbackReason 으로 본다. */
+const isFrozenAttack = (attack: AttackEvent | null): boolean => attack?.fallbackReason === 'TIMEOUT'
 
 /** 카메라 펀치(줌인) 배율. 맞은 쪽으로 화면이 잠깐 다가갔다 돌아온다. */
 const CAMERA_ZOOM: Record<'STRONG' | 'NORMAL' | 'LIMITED' | 'MISS', number> = { STRONG: 1.1, NORMAL: 1.06, LIMITED: 1.02, MISS: 1 }
@@ -94,12 +93,14 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
   const isPlaying = resolved !== null && !playback.done
   const isInputOpen = match?.phase === 'ROUND_INPUT' && !isPlaying
   const banner = useRoundBanner(match?.roundId ?? 0, isInputOpen)
+  const lang = useLang()
+  const t = useT()
   if (!match) return null
 
   const attack = playback.attack
   const outcome = attack ? outcomeOf(attack) : 'NORMAL'
   const frozen = isFrozenAttack(attack)
-  const fx = frozen ? { ...outcomeFx('MISS'), label: FROZEN_LABEL, targetShift: { x: 0, y: 0 } } : outcomeFx(outcome)
+  const fx = frozen ? { ...outcomeFx('MISS', lang), label: t.battle.frozen, targetShift: { x: 0, y: 0 } } : outcomeFx(outcome, lang)
   const isResult = playback.step === 'result' && !!attack
   const isFreeze = playback.step === 'freeze' && !!attack && !prefs.reducedMotion
   const isShaking = isResult && prefs.shakeOn && fx.shakePx > 0 && !prefs.reducedMotion

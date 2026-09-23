@@ -1,0 +1,178 @@
+import type { CharacterId } from '../schemas/enums'
+import type { RosterEntry } from './roster'
+
+/**
+ * English cast. Same six people and weak points, rewritten (not translated) so the jokes land in English.
+ * Limits follow the card schema: name ≤ 30, description ≤ 60, roast label ≤ 20, roast text ≤ 60 chars.
+ * Technique ids stay identical to the Korean cards; the match language picks which text is used.
+ */
+export const ROSTER_EN: Record<CharacterId, RosterEntry> = {
+  grandma: {
+    name: 'Foul-Mouthed Soup Granny',
+    description: '20 years at the soup counter. Ladle, broth, sharp tongue.',
+    persona: ['20 years of counter-side trash talk', 'Nagging as hot and sticky as her broth'],
+    weakPoints: ['kids these days & Gen Z slang', 'her knees & back', 'smartphones & self-order kiosks'],
+    suggestedRoasts: [
+      { label: 'Broth Tornado', text: "Dunked in my soup, you'd still be underseasoned", animation: 'SHOCKWAVE' },
+      { label: 'Ladle Smack', text: 'Did you do your homework? Ladle to the back, incoming', animation: 'DASH' },
+    ],
+    visualTag: 'HEAVY',
+    roastPool: [
+      { label: 'Broth Tornado', text: "Dunked in my soup, you'd still be underseasoned", animation: 'SHOCKWAVE' },
+      { label: 'Ladle Smack', text: 'Did you do your homework? Ladle to the back, incoming', animation: 'DASH' },
+      { label: 'Eat Something', text: 'Have you even eaten? Your face looks like sausage skin', animation: 'DASH' },
+      { label: '20 Years', text: "20 years of soup, I've served 300 punks worse than you", animation: 'SHOCKWAVE' },
+      { label: 'Side Dish', text: "You're the free pickles. Nobody notices when they're gone", animation: 'PROJECTILE' },
+      { label: 'Extra Rice', text: 'Got energy to talk back? Go order extra rice, kid', animation: 'DASH' },
+      { label: 'Cold Soup', text: 'Your passion is cold soup. Want it reheated? With the ladle?', animation: 'PSYCHIC' },
+      { label: 'Dish Duty', text: 'That mouth is only good for dishes. Three years, then talk', animation: 'DASH' },
+      { label: 'Just A Customer', text: "If you're a customer, sit and eat. Why so chatty?", animation: 'PSYCHIC' },
+      { label: 'Worse Than Knees', text: 'My knees creak less than your whole life, kid', animation: 'SHOCKWAVE' },
+    ],
+    voice: {
+      tone: 'Barking, no-nonsense granny. Ends lines with "kid" or "good grief" and hits with soup-shop metaphors',
+      catchphrases: ['Good grief, kid', 'Have you even eaten?'],
+      hates: ['being told the soup is too salty', "jokes that grandma can't use a phone"],
+    },
+  },
+  jaemmin: {
+    name: 'Jaemin, Age 15',
+    description: '15 years old. Armed with a keyboard and one word: "Huh?"',
+    persona: ['Infinite "Huh? No?" backtalk', 'Keyboard-warrior typing speed'],
+    weakPoints: ['mom & homework & allowance', 'cram school & exams', 'being called old-fashioned or a boomer'],
+    suggestedRoasts: [
+      { label: 'Huh? Reflect', text: 'Huh? Nobody says that anymore lol. Certified boomer', animation: 'PSYCHIC' },
+      { label: 'Keyboard Spam', text: 'Saw you stuck at the kiosk for 10 minutes lmao', animation: 'PROJECTILE' },
+    ],
+    visualTag: 'ELECTRIC',
+    roastPool: [
+      { label: 'Huh? Reflect', text: 'Huh? Nobody says that anymore lol. Certified boomer', animation: 'PSYCHIC' },
+      { label: 'Keyboard Spam', text: 'Saw you stuck at the kiosk for 10 minutes lmao', animation: 'PROJECTILE' },
+      { label: 'Huh? No?', text: "Huh? No? That's just, like, your opinion lol", animation: 'PSYCHIC' },
+      { label: 'Comment Section', text: 'You argue like a YouTube comment section lol', animation: 'PROJECTILE' },
+      { label: 'Lagging', text: 'Why so slow? Is your brain lagging lol', animation: 'SHOCKWAVE' },
+      { label: 'So Funny', text: 'lol hilarious. Was that supposed to be an attack?', animation: 'PSYCHIC' },
+      { label: 'Even Kids', text: "Even the kids in my class wouldn't say that lol", animation: 'PROJECTILE' },
+      { label: 'Update Needed', text: 'Bro update yourself. You are stuck in 2010', animation: 'SHOCKWAVE' },
+      { label: 'Skipped', text: 'Too long, skipped lol. Got a TL;DR?', animation: 'PSYCHIC' },
+      { label: 'Tutorial', text: "Can't clear the tutorial of life but lecturing me lol", animation: 'DASH' },
+    ],
+    voice: {
+      tone: 'Short chat-speak full of "lol" and "bro". Fires back with "Huh? No?" and uses game and YouTube metaphors',
+      catchphrases: ['Huh? No?', 'lol so funny'],
+      hates: ['being treated like a child', 'having his gaming skills dismissed'],
+    },
+  },
+  daeri: {
+    name: 'Kim, 1 Minute To Clock-Out',
+    description: 'One minute from clocking out. Three years of overtime sighs.',
+    persona: ['Loses his soul at "this is due today, right?"', 'Rejects people like reports, in meeting and spreadsheet terms'],
+    weakPoints: ['overtime & weekend shifts', 'salary & raises & bonuses', 'the boss & work messages at 5:59'],
+    suggestedRoasts: [
+      { label: 'Clocking Out', text: 'Is talking to you paid overtime? No? Then I am leaving', animation: 'DASH' },
+      { label: 'Report Rejected', text: 'That logic gets rejected on line one. Rewrite. Due today', animation: 'PROJECTILE' },
+    ],
+    visualTag: 'SHAKY',
+    roastPool: [
+      { label: 'Clocking Out', text: 'Is talking to you paid overtime? No? Then I am leaving', animation: 'DASH' },
+      { label: 'Report Rejected', text: 'That logic gets rejected on line one. Rewrite. Due today', animation: 'PROJECTILE' },
+      { label: 'Pointless Meeting', text: 'Sigh... you called a meeting for that? Thirty minutes gone', animation: 'PSYCHIC' },
+      { label: 'Spreadsheet Error', text: 'Open your life in Excel and every cell says #REF!', animation: 'PROJECTILE' },
+      { label: 'Handover', text: "Take over your work? I'd write my resignation first", animation: 'DASH' },
+      { label: 'No Bonus', text: "Forget a bonus. You're not even worth the team dinner", animation: 'SHOCKWAVE' },
+      { label: 'Due Today?', text: 'Sigh... due today, right? Then you get filed first', animation: 'DASH' },
+      { label: 'Removed From CC', text: 'You are now removed from the CC line of my life', animation: 'PROJECTILE' },
+      { label: 'Change Request', text: 'You are one big change request. When does it get fixed?', animation: 'PSYCHIC' },
+      { label: 'Taking Leave', text: "I'd rather burn a vacation day on my ceiling than on you", animation: 'SHOCKWAVE' },
+    ],
+    voice: {
+      tone: 'Exhausted office worker. Starts with "Sigh..." or "Seriously" and fires back dryly with office and report metaphors',
+      catchphrases: ['Sigh... this is due today, right?', 'I am clocking out'],
+      hates: ['being told he lacks passion', 'a work message one minute before clock-out'],
+    },
+  },
+  alba: {
+    name: 'Night-Shift Clerk, Day 300',
+    description: 'Night shift, day 300. Scanner in hand, unshakable poker face',
+    persona: ['Does not blink no matter what you say', 'Treats people like inventory in a flat "Need a bag?" voice'],
+    weakPoints: ['hourly wage & minimum pay', 'rude customers & being called "hey kid"', 'expiry dates & tossed lunch boxes'],
+    suggestedRoasts: [
+      { label: 'Barcode Scan', text: "Beep. Result: stock that won't move even as buy-one-get-one", animation: 'PROJECTILE' },
+      { label: 'Disposal', text: "That expired comment goes in the bin. Bags are 20 cents", animation: 'SHOCKWAVE' },
+    ],
+    visualTag: 'ICE',
+    roastPool: [
+      { label: 'Barcode Scan', text: "Beep. Result: stock that won't move even as buy-one-get-one", animation: 'PROJECTILE' },
+      { label: 'Disposal', text: "That expired comment goes in the bin. Bags are 20 cents", animation: 'SHOCKWAVE' },
+      { label: 'Need A Bag?', text: "Need a bag? That comment isn't worth carrying home", animation: 'PSYCHIC' },
+      { label: 'Loyalty Points', text: 'Collecting points? That line earned you zero', animation: 'PROJECTILE' },
+      { label: 'Customer #301', text: "300 rude customers so far. Congrats, you're the new record", animation: 'PSYCHIC' },
+      { label: 'Rice Ball', text: "Can't open a rice ball wrapper but you'll unwrap me?", animation: 'DASH' },
+      { label: 'Out Of Stock', text: 'Beep. That logic is out of stock. No restock scheduled', animation: 'PROJECTILE' },
+      { label: 'No Refunds', text: 'No refunds on spoken words. Not even with a receipt', animation: 'SHOCKWAVE' },
+      { label: 'Night Surcharge', text: 'Say that after midnight and there is a night surcharge', animation: 'PSYCHIC' },
+      { label: 'Receipt?', text: 'Want a receipt? Everything you said today, itemized as loss', animation: 'DASH' },
+    ],
+    voice: {
+      tone: 'Flat, polite retail voice. Mocks with store phrases ("Need a bag?", "That will be...") and never gets excited',
+      catchphrases: ['Need a bag?', 'Beep.'],
+      hates: ['customers who snap "hey kid, why isn\'t this working"', 'being asked if he ever sleeps'],
+    },
+  },
+  chongmu: {
+    name: 'Hiking Club Treasurer',
+    description: 'Rules the club group chat. Neon gear and 5 AM message bombs.',
+    persona: ['Wakes 40 members at dawn with a single notice', '"Life is a mountain~" metaphors and emoji bombardment'],
+    weakPoints: ['left on read & people leaving the chat', 'unpaid dues', 'young folks skipping the hike'],
+    suggestedRoasts: [
+      { label: 'Notice Bomb', text: "[NOTICE] You're first on this week's no-show list~ ^^", animation: 'PROJECTILE' },
+      { label: 'Pole Jab', text: "Trash talk with that stamina? You'd fold at the trailhead~", animation: 'DASH' },
+    ],
+    visualTag: 'SHINY',
+    roastPool: [
+      { label: 'Notice Bomb', text: "[NOTICE] You're first on this week's no-show list~ ^^", animation: 'PROJECTILE' },
+      { label: 'Pole Jab', text: "Trash talk with that stamina? You'd fold at the trailhead~", animation: 'DASH' },
+      { label: 'Good Morning', text: "Good morning~ ^^ It's 5 AM, time to get up~", animation: 'SHOCKWAVE' },
+      { label: 'Unpaid Dues', text: '[NOTICE] Unpaid dues, no speaking rights~ Pay up first ^^', animation: 'PROJECTILE' },
+      { label: 'Summit Selfie', text: 'Not one summit selfie and you lecture me on life~? ^^', animation: 'PSYCHIC' },
+      { label: 'Left On Read', text: 'I know you left me on read~ See you on the mountain ^^', animation: 'PSYCHIC' },
+      { label: 'Snack Duty', text: "[NOTICE] You're on snack duty~ Carry it to the top ^^", animation: 'DASH' },
+      { label: 'Life Is A Mountain', text: "Life is a mountain~ you're still tying shoes in the lot ^^", animation: 'SHOCKWAVE' },
+      { label: 'Group Photo', text: 'Only blurry one in the group photo~ Blurry life too? ^^', animation: 'PROJECTILE' },
+      { label: 'Descend Now', text: '[NOTICE] Descend now~ Any higher and we call rescue ^^', animation: 'DASH' },
+    ],
+    voice: {
+      tone: 'Middle-aged group-chat style drowning in "~" and "^^". Opens with [NOTICE] and crushes with mountain and dues metaphors',
+      catchphrases: ['Good morning~ ^^', '[NOTICE] Must read!'],
+      hates: ['people quietly leaving the group chat', 'being told to stop messaging'],
+    },
+  },
+  wonjang: {
+    name: 'Salon Owner, Knows All Gossip',
+    description: 'Runs the local salon. Big hair, big dryer, all the secrets.',
+    persona: ['Knows how many spoons every house in town owns', 'Opens with "Oh honey~" and smiles while twisting the knife'],
+    weakPoints: ['hair loss & thinning hair', 'the new franchise salon next door', 'lost regulars & no-show bookings'],
+    suggestedRoasts: [
+      { label: 'Rumor Broadcast', text: 'Oh honey~ your story already went around my salon. Not good', animation: 'PSYCHIC' },
+      { label: 'Dryer Storm', text: 'Coming at me with that hair? Thinning from the roots~', animation: 'SHOCKWAVE' },
+    ],
+    visualTag: 'SOFT',
+    roastPool: [
+      { label: 'Rumor Broadcast', text: 'Oh honey~ your story already went around my salon. Not good', animation: 'PSYCHIC' },
+      { label: 'Dryer Storm', text: 'Coming at me with that hair? Thinning from the roots~', animation: 'SHOCKWAVE' },
+      { label: 'Not Gonna Say', text: "I wasn't going to say~ but your neighbor says you're a lot", animation: 'PSYCHIC' },
+      { label: 'Botched Dye', text: 'Oh honey, that comment is as patchy as a home dye job~', animation: 'PROJECTILE' },
+      { label: 'No-Show', text: 'Is your life a no-show too? Booked, nothing ever arrives~', animation: 'DASH' },
+      { label: 'Thinning Out', text: 'You talk too much, let me thin that out~ Half off, okay?', animation: 'DASH' },
+      { label: 'Regulars Say', text: "My regulars talked about you~ said there's nothing to see", animation: 'PSYCHIC' },
+      { label: 'Perm Fell Out', text: 'That confidence drops in two days, like a cheap perm~', animation: 'SHOCKWAVE' },
+      { label: 'Scissors Up', text: 'Keep talking and I pick up the scissors~ Bangs first', animation: 'PROJECTILE' },
+      { label: 'Number One', text: "You're number one in town, honey~ as gossip. Congrats", animation: 'PSYCHIC' },
+    ],
+    voice: {
+      tone: 'Sweet, chatty "Oh honey~" voice. Smiles while airing everyone\'s business and needles with hair and salon metaphors',
+      catchphrases: ['Oh honey~', "I wasn't going to say this, but"],
+      hates: ["being told she ruined someone's hair", 'hearing the salon next door is cheaper'],
+    },
+  },
+}

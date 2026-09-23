@@ -1,4 +1,6 @@
 import type { Pose } from './characters'
+import { DEFAULT_LANG, type Lang } from '../../shared/i18n/lang'
+import { stringsFor } from '../i18n/strings'
 
 /** 판정 4단계. 서버 enum 에 MISS 가 추가되기 전에도 damage 0 을 MISS 로 본다. */
 export type Outcome = 'STRONG' | 'NORMAL' | 'LIMITED' | 'MISS'
@@ -20,14 +22,20 @@ export interface OutcomeFx {
   targetShift: { x: number; y: number }
 }
 
-const FX: Record<Outcome, OutcomeFx> = {
-  STRONG: { targetPose: 'hit', label: '쾅!', shakePx: 8, shakeMs: 300, showDamage: true, targetShift: { x: 24, y: 0 } },
-  NORMAL: { targetPose: 'hit', label: '쾅!', shakePx: 5, shakeMs: 250, showDamage: true, targetShift: { x: 16, y: 0 } },
-  LIMITED: { targetPose: 'idle', label: '막았다!', shakePx: 2, shakeMs: 150, showDamage: true, targetShift: { x: 40, y: 0 } },
-  MISS: { targetPose: 'idle', label: '휙!', shakePx: 0, shakeMs: 0, showDamage: false, targetShift: { x: 60, y: 0 } },
+const FX: Record<Outcome, Omit<OutcomeFx, 'label'>> = {
+  STRONG: { targetPose: 'hit', shakePx: 8, shakeMs: 300, showDamage: true, targetShift: { x: 24, y: 0 } },
+  NORMAL: { targetPose: 'hit', shakePx: 5, shakeMs: 250, showDamage: true, targetShift: { x: 16, y: 0 } },
+  LIMITED: { targetPose: 'idle', shakePx: 2, shakeMs: 150, showDamage: true, targetShift: { x: 40, y: 0 } },
+  MISS: { targetPose: 'idle', shakePx: 0, shakeMs: 0, showDamage: false, targetShift: { x: 60, y: 0 } },
 }
 
-export const outcomeFx = (o: Outcome): OutcomeFx => ({ ...FX[o], targetShift: { ...FX[o].targetShift } })
+const labelFor = (o: Outcome, lang: Lang): string => {
+  const t = stringsFor(lang).outcome
+  return { STRONG: t.strong, NORMAL: t.normal, LIMITED: t.limited, MISS: t.miss }[o]
+}
+
+/** 연출 수치는 언어와 무관하고 라벨('쾅!'/'BAM!')만 언어를 따른다. */
+export const outcomeFx = (o: Outcome, lang: Lang = DEFAULT_LANG): OutcomeFx => ({ ...FX[o], label: labelFor(o, lang), targetShift: { ...FX[o].targetShift } })
 
 /** WeaponProfile.imageUrl 은 로직 세션 계약 변경 후 생긴다. 그 전엔 null. */
 export const weaponImageUrlOf = (weapon: { imageUrl?: unknown } | null | undefined): string | null => {

@@ -2,14 +2,16 @@ import { z } from 'zod'
 import type { PlayerSlot } from '../../shared/schemas/enums'
 import { WeaponProfile, type WeaponInput } from '../../shared/schemas/weapon'
 import type { OpenRouterClient } from './openrouter'
-import { WEAPON_GEN_SYSTEM, WeaponGenOutput, buildWeaponGenUser } from './prompts/weapon'
+import { WEAPON_GEN_SYSTEM_BY_LANG, WeaponGenOutput, buildWeaponGenUser } from './prompts/weapon'
 import { rosterDescription } from '../../shared/rules/roster'
+import { DEFAULT_LANG, type Lang } from '../../shared/i18n/lang'
 
 const WEAPON_GEN_JSON_SCHEMA = z.toJSONSchema(WeaponGenOutput)
 
 export interface WeaponGenContext {
   matchId: string
   slot: PlayerSlot
+  lang?: Lang
 }
 
 /**
@@ -22,11 +24,12 @@ export const generateWeaponWithOpenRouter = async (
   input: WeaponInput,
   ctx: WeaponGenContext,
 ): Promise<WeaponProfile> => {
+  const lang = ctx.lang ?? DEFAULT_LANG
   const call = () =>
     or.chatJson({
       model,
-      system: WEAPON_GEN_SYSTEM,
-      user: buildWeaponGenUser(input.weaponName, input.description, input.character, rosterDescription(input.characterId)),
+      system: WEAPON_GEN_SYSTEM_BY_LANG[lang],
+      user: buildWeaponGenUser(input.weaponName, input.description, input.character, rosterDescription(input.characterId, lang)),
       schema: WeaponGenOutput,
       jsonSchema: WEAPON_GEN_JSON_SCHEMA,
       timeoutMs: 8000,

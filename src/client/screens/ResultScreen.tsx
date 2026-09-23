@@ -8,6 +8,7 @@ import { Hud } from '../battle/Hud'
 import { useCutout } from '../battle/WeaponSprite'
 import { outcomeFx, outcomeOf, weaponImageUrlOf } from '../battle/outcome'
 import type { CharacterId, Pose } from '../battle/characters'
+import { useLang, useT } from '../i18n/LangContext'
 
 export interface ResultScreenProps {
   state: ClientState
@@ -37,16 +38,18 @@ const poseFor = (slot: PlayerSlot, winner: PlayerSlot | null | undefined): Pose 
 function BestHitCard({ attack, actor }: { attack: AttackEvent; actor: PublicPlayer | undefined }) {
   const src = useCutout(weaponImageUrlOf(actor?.weapon), actor?.weapon?.visualTag ?? null)
   const outcome = outcomeOf(attack)
+  const lang = useLang()
+  const t = useT()
   return (
     <div className="best">
-      <div className="best__title">최고의 한 방</div>
+      <div className="best__title">{t.result.bestShot}</div>
       <div className="best__body">
         <img className="best__weapon" src={src} alt="" draggable={false} />
         <div className="best__col">
-          <div className="best__who">{actor?.nickname ?? (attack.actor === 'A' ? '왼쪽' : '오른쪽')}</div>
+          <div className="best__who">{actor?.nickname ?? (attack.actor === 'A' ? t.result.left : t.result.right)}</div>
           <div className="best__tech">{attack.techniqueLabel}</div>
           <div className="best__row">
-            <span className={`best__label is-${outcome}`}>{outcomeFx(outcome).label}</span>
+            <span className={`best__label is-${outcome}`}>{outcomeFx(outcome, lang).label}</span>
             <span className="best__dmg">-{attack.damage}</span>
           </div>
         </div>
@@ -58,10 +61,11 @@ function BestHitCard({ attack, actor }: { attack: AttackEvent; actor: PublicPlay
 /** 결과: 승자·패자 자세, 최고 피해 공격, 재대결. */
 export function ResultScreen({ state, you, characterIds, send }: ResultScreenProps) {
   const [rematchSent, setRematchSent] = useState(false)
+  const t = useT()
   const match = state.match
   if (!match) return null
   const winner = match.winner ?? null
-  const winnerName = winner ? match.players[winner]?.nickname ?? (winner === 'A' ? '왼쪽' : '오른쪽') : null
+  const winnerName = winner ? match.players[winner]?.nickname ?? (winner === 'A' ? t.result.left : t.result.right) : null
   const best = highestDamageAttack(state)
 
   return (
@@ -72,7 +76,7 @@ export function ResultScreen({ state, you, characterIds, send }: ResultScreenPro
       <Hud players={match.players} characterIds={characterIds} roundId={match.roundId} seconds={null} />
 
       <div className="result__banner">
-        <div className="result__title">{winner ? `${winnerName} 승리!` : '무승부!'}</div>
+        <div className="result__title">{winner && winnerName ? t.result.win(winnerName) : t.result.draw}</div>
         {best && best.damage > 0 && <BestHitCard attack={best} actor={match.players[best.actor]} />}
       </div>
 
@@ -87,10 +91,10 @@ export function ResultScreen({ state, you, characterIds, send }: ResultScreenPro
               setRematchSent(true)
             }}
           >
-            {rematchSent ? '상대를 기다리는 중…' : '재대결!'}
+            {rematchSent ? t.result.waitingOpponent : t.result.rematch}
           </button>
         ) : (
-          <div className="muted">두 사람이 재대결을 누르면 새 경기가 시작됩니다.</div>
+          <div className="muted">{t.result.rematchHint}</div>
         )}
       </div>
     </div>

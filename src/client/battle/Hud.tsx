@@ -2,6 +2,7 @@ import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { PublicPlayer } from '../../shared/schemas/match'
 import { characterOf, hasCharacterArtwork, poseUrl, type CharacterId } from './characters'
 import { splitWeakPoints } from './weak-points'
+import { useLang, useT } from '../i18n/LangContext'
 
 export interface HudProps {
   players: Partial<Record<PlayerSlot, PublicPlayer>>
@@ -30,10 +31,12 @@ function Portrait({ id }: { id: CharacterId | null }) {
 }
 
 function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right'; maxHp: number }) {
+  const lang = useLang()
+  const t = useT()
   const hp = player?.hp ?? maxHp
   const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100))
-  const name = player?.nickname ?? (id ? characterOf(id).name : '대기 중')
-  const tagline = player?.weapon?.tagline ?? (player?.weapon?.displayName ? '' : id ? characterOf(id).blurb : '')
+  const name = player?.nickname ?? (id ? characterOf(id, lang).name : t.hud.waiting)
+  const tagline = player?.weapon?.tagline ?? (player?.weapon?.displayName ? '' : id ? characterOf(id, lang).blurb : '')
   const fouls = player?.fouls ?? 0
   const weakPoints = splitWeakPoints(player?.weapon?.weakness)
   return (
@@ -48,7 +51,7 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
         </div>
         <div className="hud__meta">
           <span>{hp} HP</span>
-          <span className="cards" title="반칙 카드">
+          <span className="cards" title={t.hud.foulCards}>
             <span className={`card${fouls >= 1 ? ' is-on' : ''}`} />
             <span className={`card${fouls >= 2 ? ' is-on' : ''}`} />
           </span>
@@ -57,7 +60,7 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
         <div className="hud__tag">{tagline}</div>
         {weakPoints.length > 0 && (
           <div className="hud__weak">
-            <span className="hud__weak-label">아픈 곳</span>
+            <span className="hud__weak-label">{t.hud.weakPoints}</span>
             {weakPoints.map((w) => (
               <span key={w} className="hud__weak-chip">
                 {w}
@@ -72,13 +75,14 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
 
 /** 상단: 초상화·이름·체력·카드·타이머. 서버 HP 를 그대로 보여준다. */
 export function Hud({ players, characterIds, roundId, seconds, maxHp = 100 }: HudProps) {
+  const t = useT()
   return (
     <div className="hud">
       <Side player={players.A} id={characterIds.A} side="left" maxHp={maxHp} />
       <div className="hud__center">
-        <div className="hud__round">{roundId > 0 ? `ROUND ${roundId}` : 'READY'}</div>
+        <div className="hud__round">{roundId > 0 ? t.hud.round(roundId) : t.hud.ready}</div>
         <div className={`hud__timer${seconds !== null && seconds <= URGENT_SECONDS ? ' is-urgent' : ''}`}>{seconds ?? '--'}</div>
-        <img className="hud__logo" src="/assets/logo.png" alt="아무말 대난투" />
+        <img className="hud__logo" src="/assets/logo.png" alt={t.appTitle} />
       </div>
       <Side player={players.B} id={characterIds.B} side="right" maxHp={maxHp} />
     </div>

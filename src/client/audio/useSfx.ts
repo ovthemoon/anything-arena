@@ -3,8 +3,9 @@ import type { PlayerSlot } from '../../shared/schemas/enums'
 import type { ClientState } from '../state/match-reducer'
 import type { PlaybackState } from '../battle/usePlayback'
 import { outcomeOf } from '../battle/outcome'
-import { outcomeCue, resultCue, roundStartCue, type RoundMarker } from './cues'
-import { createBrowserSfxPlayer, type BgmTrack, type SfxPlayer } from './sfx'
+import { bgmTrackFor, outcomeCue, resultCue, roundStartCue, type RoundMarker } from './cues'
+import { createBrowserSfxPlayer, type SfxPlayer } from './sfx'
+import type { StepKind } from '../battle/timeline'
 
 export interface UseSfxInput {
   state: ClientState
@@ -17,11 +18,8 @@ export interface UseSfxInput {
   isFinished: boolean
 }
 
-const bgmTrackFor = (isLobby: boolean, isBattle: boolean): BgmTrack | null => {
-  if (isBattle) return 'battle'
-  if (isLobby) return 'lobby'
-  return null
-}
+/** 결정타의 이 장면들 동안 음악을 끊는다: 정적 → 타격 → 함성 → 음악 복귀 */
+const SILENT_STEPS: readonly StepKind[] = ['windup', 'travel', 'freeze']
 
 /**
  * 경기 상태·재생 단계를 보고 효과음과 배경음을 낸다. 판단은 cues.ts 의 순수 함수가 하고,
@@ -41,17 +39,27 @@ export function useSfx({ state, playback, muted, you, isLobby, isBattle, isFinis
     sfx.setMuted(muted)
   }, [muted, sfx])
 
-  const track = bgmTrackFor(isLobby, isBattle)
+  const isSilenced = playback.isFinishing && playback.step !== null && SILENT_STEPS.includes(playback.step)
+  const track = bgmTrackFor({ isLobby, isBattle, isSilenced })
   useEffect(() => {
     if (!track) return
     sfx.startBgm(track)
     return () => sfx.stopBgm()
   }, [track, sfx])
 
+  // 공격 연출(목소리가 나가는 구간) 내내 배경음을 낮춘다
+  const isDucked = playback.step !== null && !playback.done
+  useEffect(() => {
+    sfx.setDucked(isDucked)
+  }, [isDucked, sfx])
+
   useEffect(() => {
     if (phase === null || roundId === null) return
     const next: RoundMarker = { phase, roundId }
-    if (roundStartCue(prevRound.current, next)) sfx.play('round-start')
+    if (roundStartCue(prevRound.current, next)) {
+      sfx.play('bell')
+      sfx.play('round-start')
+    }
     prevRound.current = next
   }, [phase, roundId, sfx])
 

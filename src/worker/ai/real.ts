@@ -10,8 +10,11 @@ import { generateCommentaryWithOpenRouter } from './commentary'
 import { synthesizeToR2 } from './tts'
 import { generateWeaponImageToR2 } from './weapon-image'
 import type { AiAdapters, JudgeRequest } from './types'
+import { DEFAULT_LANG, type Lang } from '../../shared/i18n/lang'
 
 const JEV_TIMEOUT_MS = 1500
+/** 영어 방 해설 목소리 기본값 (MiniMax). wrangler vars TTS_VOICE_EN 으로 바꾼다. */
+const DEFAULT_TTS_VOICE_EN = 'English_expressive_narrator'
 
 const FOUL_JUDGE_RESULT = {
   moderation: 'FOUL' as const,
@@ -38,7 +41,8 @@ export const createRealAdapters = (env: Env): AiAdapters => {
   const textModel = env.TEXT_MODEL || 'openai/gpt-5-mini'
   const jevModel = env.JEV_MODEL || 'jev-latest'
   const ttsModel = env.TTS_MODEL
-  const ttsVoice = env.TTS_VOICE || undefined
+  /** 해설 목소리는 방 언어를 따른다. */
+  const ttsVoiceByLang: Record<Lang, string | undefined> = { ko: env.TTS_VOICE || undefined, en: env.TTS_VOICE_EN || DEFAULT_TTS_VOICE_EN }
   const imageModel = env.IMAGE_MODEL || 'google/gemini-3.1-flash-lite-image'
   const jevOptions = { apiKey: env.TYPESAFE_API_KEY, model: jevModel, timeoutMs: JEV_TIMEOUT_MS }
 
@@ -49,14 +53,14 @@ export const createRealAdapters = (env: Env): AiAdapters => {
     },
 
     async judgeAction(req: JudgeRequest) {
-      if (hitsBlocklist(req.actionText)) return FOUL_JUDGE_RESULT
+      if (hitsBlocklist(req.actionText, req.lang ?? DEFAULT_LANG)) return FOUL_JUDGE_RESULT
       if (!hasTypesafe) return mock.judgeAction(req)
       return judgeWithJev(jevOptions, req)
     },
 
-    async generateCommentary(event: AttackEvent, weapons: Record<PlayerSlot, WeaponProfile>) {
-      if (!or) return mock.generateCommentary(event, weapons)
-      return generateCommentaryWithOpenRouter(or, textModel, event, weapons)
+    async generateCommentary(event: AttackEvent, weapons: Record<PlayerSlot, WeaponProfile>, lang: Lang = DEFAULT_LANG) {
+      if (!or) return mock.generateCommentary(event, weapons, lang)
+      return generateCommentaryWithOpenRouter(or, textModel, event, weapons, lang)
     },
 
     async generateWeaponImage(profile, ctx) {
@@ -64,15 +68,15 @@ export const createRealAdapters = (env: Env): AiAdapters => {
       return generateWeaponImageToR2(or, env.AUDIO, imageModel, profile, ctx)
     },
 
-    async synthesize(text: string, key: string) {
-      if (!or || !ttsModel) return mock.synthesize(text, key)
-      return synthesizeToR2(or, env.AUDIO, ttsModel, ttsVoice, text, key)
+    async synthesize(text: string, key: string, lang: Lang = DEFAULT_LANG) {
+      if (!or || !ttsModel) return mock.synthesize(text, key, lang)
+      return synthesizeToR2(or, env.AUDIO, ttsModel, ttsVoiceByLang[lang], text, key)
     },
 
-    async checkText(text: string): Promise<ModerationDecision> {
-      if (hitsBlocklist(text)) return 'FOUL'
-      if (!hasTypesafe) return mock.checkText(text)
-      return checkTextWithJev(jevOptions, text)
+    async checkText(text: string, lang: Lang = DEFAULT_LANG): Promise<ModerationDecision> {
+      if (hitsBlocklist(text, lang)) return 'FOUL'
+      if (!hasTypesafe) return mock.checkText(text, lang)
+      return checkTextWithJev(jevOptions, text, lang)
     },
   }
 }

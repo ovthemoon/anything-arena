@@ -1,6 +1,7 @@
 import type { WeaponProfile } from '../../shared/schemas/weapon'
+import { DEFAULT_LANG, type Lang } from '../../shared/i18n/lang'
 
-/** 설정 생성 실패 시 쓰는 검수된 기본 무기 (PRD 5). */
+/** 설정 생성 실패 시 쓰는 검수된 기본 무기 (PRD 5). 한국어. */
 export const DEFAULT_WEAPONS: [WeaponProfile, WeaponProfile] = [
   {
     id: 'default-wet-sock', version: 1, characterName: '빨래 못 말린 자취생', characterId: null, imageUrl: null, displayName: '젖은 양말', tagline: '하루 종일 따라다니는 축축함',
@@ -19,6 +20,28 @@ export const DEFAULT_WEAPONS: [WeaponProfile, WeaponProfile] = [
     ],
   },
 ]
+
+/** English twins of the reviewed default weapons. Same ids so judge caches line up per match. */
+export const DEFAULT_WEAPONS_EN: [WeaponProfile, WeaponProfile] = [
+  {
+    id: 'default-wet-sock', version: 1, characterName: 'Student Who Never Dries Laundry', characterId: null, imageUrl: null, displayName: 'Wet Sock', tagline: 'A dampness that follows you all day',
+    capabilities: ['moisture transfer', 'swinging'], weakness: 'heat', visualTag: 'WET',
+    techniques: [
+      { id: 'wet-1', name: 'Soggy Final Blow', actionText: 'Swings the sock and soaks the opponent through', animation: 'DASH' },
+      { id: 'wet-2', name: 'Wet Spin', actionText: 'Spins around, spraying droplets everywhere', animation: 'PROJECTILE' },
+    ],
+  },
+  {
+    id: 'default-phone-1pct', version: 1, characterName: 'Student Who Lost the Charger', characterId: null, imageUrl: null, displayName: '1% Battery Phone', tagline: 'Refuses to die until the very last second',
+    capabilities: ['vibration', 'screen glare'], weakness: 'moisture', visualTag: 'ELECTRIC',
+    techniques: [
+      { id: 'phone-1', name: 'Last-Gasp Buzz', actionText: 'Gathers its last power and vibrates violently', animation: 'SHOCKWAVE' },
+      { id: 'phone-2', name: 'Final Screen Flash', actionText: 'Blinds the opponent at maximum brightness', animation: 'PSYCHIC' },
+    ],
+  },
+]
+
+export const defaultWeaponsFor = (lang: Lang = DEFAULT_LANG): [WeaponProfile, WeaponProfile] => (lang === 'en' ? DEFAULT_WEAPONS_EN : DEFAULT_WEAPONS)
 
 /** 휴대폰 '추천 캐릭터' 목록. 고르면 이 값으로 weapon_submit 을 보낸다 (프리셋 = 미리 채운 입력). */
 export const PRESET_CHARACTERS = [

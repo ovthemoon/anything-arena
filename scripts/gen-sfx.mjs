@@ -112,6 +112,15 @@ const SOUNDS = {
   miss: () => mix(noise({ ms: 220, decay: 5, tilt: 0.6, gain: 0.5 }), tone({ wave: 'sine', from: 900, to: 250, ms: 220, decay: 4, gain: 0.25 })),
   // 승리: 팡파르 후 길게 끄는 마지막 음
   win: () => concat(arp('square', ['C5', 'E5', 'G5'], 110, 15), tone({ wave: 'square', from: NOTE.C6, ms: 520, decay: 1.8 })),
+  // 복싱 종: 배음이 정수배가 아닌 사인파 4개를 길게 울린다 (쇠 울림)
+  bell: () =>
+    mix(
+      tone({ wave: 'sine', from: 880, ms: 1400, decay: 3, gain: 0.5 }),
+      tone({ wave: 'sine', from: 880 * 2.41, ms: 1200, decay: 4, gain: 0.3 }),
+      tone({ wave: 'sine', from: 880 * 3.93, ms: 900, decay: 5, gain: 0.2 }),
+      tone({ wave: 'sine', from: 880 * 5.72, ms: 600, decay: 6, gain: 0.1 }),
+      noise({ ms: 40, decay: 20, tilt: 0.9, gain: 0.3 }),
+    ),
   // 패배: 느리게 내려가는 삼각파
   lose: () => concat(arp('triangle', ['E4', 'D4', 'C4'], 230, 20), tone({ wave: 'triangle', from: NOTE.B3, to: NOTE.B3 * 0.94, ms: 620, decay: 1.5 })),
 }

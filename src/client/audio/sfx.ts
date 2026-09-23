@@ -1,6 +1,9 @@
-import type { AudioHandle } from './AudioManager'
+export interface SfxHandle {
+  stop: () => void
+  setVolume: (volume: number) => void
+}
 
-export type SfxName = 'whistle' | 'round-start' | 'hit-strong' | 'hit-normal' | 'block' | 'miss' | 'win' | 'lose'
+export type SfxName = 'whistle' | 'round-start' | 'hit-strong' | 'hit-normal' | 'block' | 'miss' | 'win' | 'lose' | 'bell'
 
 const AUDIO_DIR = '/audio'
 
@@ -13,6 +16,7 @@ export const SFX_PATHS: Record<SfxName, string> = {
   miss: `${AUDIO_DIR}/miss.mp3`,
   win: `${AUDIO_DIR}/win.mp3`,
   lose: `${AUDIO_DIR}/lose.mp3`,
+  bell: `${AUDIO_DIR}/bell.mp3`,
 }
 
 export type BgmTrack = 'lobby' | 'battle'
@@ -25,6 +29,8 @@ export const BGM_PATHS: Record<BgmTrack, string> = {
 export const SFX_VOLUME = 0.9
 /** 배경음은 해설 음성·효과음 밑에 깔리도록 낮게. */
 export const BGM_VOLUME = 0.18
+/** 목소리(말풍선·해설)가 나가는 동안은 더 낮게 (덕킹). */
+export const BGM_DUCKED_VOLUME = 0.05
 
 export interface PlayOptions {
   loop: boolean
@@ -32,13 +38,15 @@ export interface PlayOptions {
 }
 
 export interface SfxDeps {
-  play: (url: string, options: PlayOptions) => AudioHandle
+  play: (url: string, options: PlayOptions) => SfxHandle
 }
 
 export interface SfxPlayer {
   play: (name: SfxName) => void
   startBgm: (track: BgmTrack) => void
   stopBgm: () => void
+  /** 목소리가 나가는 동안 배경음을 낮춘다. 켜진 채로 시작한 배경음도 낮은 볼륨으로 시작. */
+  setDucked: (ducked: boolean) => void
   setMuted: (muted: boolean) => void
 }
 
@@ -50,11 +58,14 @@ export interface SfxPlayer {
  */
 export function createSfxPlayer(deps: SfxDeps): SfxPlayer {
   let muted = false
+  let ducked = false
   let wantedTrack: BgmTrack | null = null
   let playingTrack: BgmTrack | null = null
-  let bgm: AudioHandle | null = null
+  let bgm: SfxHandle | null = null
 
-  const safePlay = (url: string, options: PlayOptions): AudioHandle | null => {
+  const bgmVolume = (): number => (ducked ? BGM_DUCKED_VOLUME : BGM_VOLUME)
+
+  const safePlay = (url: string, options: PlayOptions): SfxHandle | null => {
     try {
       return deps.play(url, options)
     } catch {
@@ -78,8 +89,17 @@ export function createSfxPlayer(deps: SfxDeps): SfxPlayer {
     if (muted) return
     if (playingTrack === track && bgm) return
     haltBgm()
-    bgm = safePlay(BGM_PATHS[track], { loop: true, volume: BGM_VOLUME })
+    bgm = safePlay(BGM_PATHS[track], { loop: true, volume: bgmVolume() })
     playingTrack = bgm ? track : null
+  }
+
+  const setDucked = (value: boolean): void => {
+    ducked = value
+    try {
+      bgm?.setVolume(bgmVolume())
+    } catch {
+      /* 볼륨 조절 실패는 무시 */
+    }
   }
 
   const stopBgm = (): void => {
@@ -93,7 +113,7 @@ export function createSfxPlayer(deps: SfxDeps): SfxPlayer {
     else if (wantedTrack) startBgm(wantedTrack)
   }
 
-  return { play, startBgm, stopBgm, setMuted }
+  return { play, startBgm, stopBgm, setDucked, setMuted }
 }
 
 export function createBrowserSfxPlayer(): SfxPlayer {
@@ -107,6 +127,9 @@ export function createBrowserSfxPlayer(): SfxPlayer {
         stop: () => {
           audio.pause()
           audio.currentTime = 0
+        },
+        setVolume: (v) => {
+          audio.volume = v
         },
       }
     },

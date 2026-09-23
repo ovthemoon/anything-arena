@@ -1,5 +1,8 @@
 import type { CharacterId, PlayerSlot } from '../schemas/enums'
 import type { WeaponProfile } from '../schemas/weapon'
+import { DEFAULT_LANG, type Lang } from '../i18n/lang'
+import { matchupRoasts } from './matchups'
+import { ROSTER_EN } from './roster-en'
 
 /**
  * 고정 출연진. "긁기 배틀" 모드: 무기를 미리 정하지 않는다.
@@ -207,16 +210,32 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
   },
 }
 
-export const rosterDescription = (id: CharacterId | null | undefined): string => (id ? ROSTER[id].description : '')
+/** 언어별 출연진. ROSTER 는 한국어 원본이고 en 은 roster-en.ts 에서 다시 쓴 카드다. */
+export const ROSTER_BY_LANG: Record<Lang, Record<CharacterId, RosterEntry>> = { ko: ROSTER, en: ROSTER_EN }
+
+export const rosterEntry = (id: CharacterId, lang: Lang = DEFAULT_LANG): RosterEntry => ROSTER_BY_LANG[lang][id]
+
+export const rosterDescription = (id: CharacterId | null | undefined, lang: Lang = DEFAULT_LANG): string => (id ? rosterEntry(id, lang).description : '')
 
 /** 출연진이 아닌 자유 입력 무기에는 말맛이 없다. */
-export const rosterVoice = (id: CharacterId | null | undefined): CharacterVoice | null => (id ? ROSTER[id].voice : null)
+export const rosterVoice = (id: CharacterId | null | undefined, lang: Lang = DEFAULT_LANG): CharacterVoice | null => (id ? rosterEntry(id, lang).voice : null)
 
 export const DEFAULT_CHARACTER_FOR_SLOT: Record<PlayerSlot, CharacterId> = { A: 'grandma', B: 'jaemmin' }
 
-/** 출연진 카드. WeaponProfile 형태를 그대로 써서 엔진·화면·판정 계약을 바꾸지 않는다. */
-export const characterCard = (id: CharacterId, matchId: string): WeaponProfile => {
-  const r = ROSTER[id]
+/** 출연진 카드. WeaponProfile 형태를 그대로 써서 엔진·화면·판정 계약을 바꾸지 않는다. technique id 는 언어와 무관하게 같다. */
+/** WeaponProfile.techniques 최대 개수 (schemas/weapon.ts 의 max 와 같다). */
+const MAX_TECHNIQUES = 10
+
+/**
+ * 출연진 카드. opponentId 를 주면 그 상대의 아픈 곳을 찌르는 매치업 대사를 앞에 싣고,
+ * 나머지는 자기 목소리 풀로 채운다. 상대를 모르는 입장 시점엔 풀만 싣고, 둘 다 준비되면 엔진이 다시 만든다.
+ */
+export const characterCard = (id: CharacterId, matchId: string, lang: Lang = DEFAULT_LANG, opponentId: CharacterId | null = null): WeaponProfile => {
+  const r = rosterEntry(id, lang)
+  const targeted = (opponentId ? matchupRoasts(id, opponentId, lang) : []).map((roast, i) => ({
+    id: `${id}-vs-${opponentId}-r${i + 1}`, name: roast.label, actionText: roast.text, animation: roast.animation, hitsWeakPoint: true as const,
+  }))
+  const own = r.roastPool.slice(0, MAX_TECHNIQUES - targeted.length).map((roast, i) => ({ id: `${id}-r${i + 1}`, name: roast.label, actionText: roast.text, animation: roast.animation }))
   return {
     id: `${matchId}-${id}`,
     version: 1,
@@ -228,6 +247,6 @@ export const characterCard = (id: CharacterId, matchId: string): WeaponProfile =
     capabilities: [...r.persona],
     weakness: r.weakPoints.join(', '),
     visualTag: r.visualTag,
-    techniques: r.roastPool.map((roast, i) => ({ id: `${id}-r${i + 1}`, name: roast.label, actionText: roast.text, animation: roast.animation })),
+    techniques: [...targeted, ...own],
   }
 }

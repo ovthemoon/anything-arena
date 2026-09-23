@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ActionStatus, AnimationType, CharacterId, Effectiveness, FallbackReason, MatchPhase, PlayerSlot } from './enums'
 import { WeaponProfile } from './weapon'
+import { Lang } from '../i18n/lang'
 
 export const AttackEvent = z.object({
   eventId: z.string(),
@@ -59,5 +60,7 @@ export const PublicMatchState = z.object({
   screenConnected: z.boolean().optional(),
   eventSeq: z.number().int(),
   rulesetVersion: z.string(),
+  /** 방 언어. 카드·AI·화면 문구가 모두 따른다. 옛 스냅샷엔 없을 수 있어 ko 기본. */
+  lang: Lang.default('ko'),
 })
 export type PublicMatchState = z.infer<typeof PublicMatchState>

@@ -76,3 +76,18 @@ describe('engine', () => {
     expect(setReady(s, 'A', 5000)).toBe(s)
   })
 })
+
+describe('retarget cards when both are ready', () => {
+  test('both cards get roasts aimed at the actual opponent', async () => {
+    const { characterCard } = await import('../../src/shared/rules/roster')
+    let s = createMatch('ROOM', 'm1', 1000)
+    s = setWeapon(s, 'A', characterCard('grandma', 'm1'), '나')
+    s = setWeapon(s, 'B', characterCard('daeri', 'm1'), '너')
+    s = setReady(s, 'A', 1000)
+    s = setReady(s, 'B', 1000)
+    expect(s.phase).toBe('ROUND_INPUT')
+    expect(s.players.A.weapon?.techniques[0]?.id.startsWith('grandma-vs-daeri-')).toBe(true)
+    expect(s.players.B.weapon?.techniques[0]?.id.startsWith('daeri-vs-grandma-')).toBe(true)
+    expect(s.players.A.nickname).toBe('나')
+  })
+})

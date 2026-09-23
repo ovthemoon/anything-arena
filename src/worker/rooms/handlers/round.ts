@@ -7,7 +7,7 @@ import { other, resolveRound, startRound, toPublic, type PendingAction } from '.
 import { type RoomCtx, withTimeout } from '../room-context'
 import { submitBotAction } from './bot'
 
-const PLAYBACK_DELAY_MS = 14_000 // 공격 1회 연출 ≈6.6초 × 2 (timeline.ts STEP_MS 합계). 입력 15초를 연출이 잡아먹지 않게 서버가 기다린다.
+const PLAYBACK_DELAY_MS = 19_000 // 공격 1회 연출 ≈6.6초 × 2 (timeline.ts STEP_MS 합계) + 해설 음성(2배속, ≤5초) 종료 대기 공격당 ≤2.5초. 입력 15초를 연출이 잡아먹지 않게 서버가 기다린다.
 const COMMENTARY_VALID_MS = 20_000 // 라운드 재생(≈13초) 전체를 덮는다. 클라이언트가 장면 차례에 맞춰 튼다.
 const COMMENTARY_TIMEOUT_MS = 5_000
 const TTS_TIMEOUT_MS = 8_000
@@ -44,10 +44,11 @@ const prepareCommentary = async (
   audioKey: string,
 ): Promise<{ text: string; audioPath: string | null } | null> => {
   try {
-    const text = await withTimeout(ctx.ai.generateCommentary(attack, weapons), COMMENTARY_TIMEOUT_MS)
-    const verdict = await withTimeout(ctx.ai.checkText(text), COMMENTARY_TIMEOUT_MS)
+    const lang = ctx.getState().lang
+    const text = await withTimeout(ctx.ai.generateCommentary(attack, weapons, lang), COMMENTARY_TIMEOUT_MS)
+    const verdict = await withTimeout(ctx.ai.checkText(text, lang), COMMENTARY_TIMEOUT_MS)
     if (verdict !== 'ALLOW') return null
-    const audioPath = await withTimeout(ctx.ai.synthesize(text, audioKey), TTS_TIMEOUT_MS).catch((e: unknown) => {
+    const audioPath = await withTimeout(ctx.ai.synthesize(text, audioKey, lang), TTS_TIMEOUT_MS).catch((e: unknown) => {
       console.warn('[room] tts failed', { audioKey, error: String(e) })
       return null
     })

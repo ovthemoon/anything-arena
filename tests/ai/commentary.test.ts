@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { FALLBACK_COMMENTARY, generateCommentaryWithOpenRouter } from '../../src/worker/ai/commentary'
+import { COMMENTARY_SYSTEM } from '../../src/worker/ai/prompts/commentary'
 import { DEFAULT_WEAPONS } from '../../src/worker/game/default-weapons'
 
 const event = {
@@ -52,5 +53,19 @@ describe('generateCommentaryWithOpenRouter', () => {
     const or = { chatJson: vi.fn().mockResolvedValue({ text: '강력한 일격!' }), speech: vi.fn() }
     const result = await generateCommentaryWithOpenRouter(or as never, 'm', event, weapons)
     expect(result).toBe('강력한 일격!')
+  })
+})
+
+describe('caster tone', () => {
+  test('korean system prompt asks for live play-by-play with the outcome tags', () => {
+    expect(COMMENTARY_SYSTEM).toContain('캐스터')
+    expect(COMMENTARY_SYSTEM).toContain('들어갔어요')
+    expect(COMMENTARY_SYSTEM).toContain('헛스윙')
+  })
+  test('fallback lines are caster shouts within 50 chars', () => {
+    for (const line of FALLBACK_COMMENTARY) {
+      expect(line.endsWith('!')).toBe(true)
+      expect(line.length).toBeLessThanOrEqual(50)
+    }
   })
 })

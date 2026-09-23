@@ -27,3 +27,19 @@ describe('pickSuggestions', () => {
     expect(two).toEqual(copy)
   })
 })
+
+describe('pickTargetedSuggestions', () => {
+  const t = (id: string, hitsWeakPoint?: boolean) => ({ id, hitsWeakPoint })
+  test('mixes 2 targeted and 1 own-voice when both exist', async () => {
+    const { pickTargetedSuggestions } = await import('../../../src/client/battle/suggestions')
+    const items = [t('v1', true), t('v2', true), t('v3', true), t('o1'), t('o2'), t('o3')]
+    const picked = pickTargetedSuggestions(items, 'seed', 0)
+    expect(picked).toHaveLength(3)
+    expect(picked.filter((p) => p.hitsWeakPoint)).toHaveLength(2)
+  })
+  test('falls back to the plain pick when nothing is targeted', async () => {
+    const { pickTargetedSuggestions } = await import('../../../src/client/battle/suggestions')
+    const items = [t('o1'), t('o2'), t('o3'), t('o4')]
+    expect(pickTargetedSuggestions(items, 'seed', 0)).toHaveLength(3)
+  })
+})

@@ -3,6 +3,7 @@ import { createAiAdapters, type AiAdapters } from '../ai'
 import { type EngineState, createMatch, setConnected, toPublic } from '../game/engine'
 import { isAllowedOrigin, readSeatCookie, verifySeatToken } from '../security/session'
 import { LIMITS } from '../../shared/rules/limits'
+import { parseLang } from '../../shared/i18n/lang'
 import { ConnectionRole, PlayerSlot } from '../../shared/schemas/enums'
 import { ClientMessage, type ServerMessage } from '../../shared/schemas/messages'
 import { type RoomCtx, errorMessage } from './room-context'
@@ -63,9 +64,10 @@ export class BattleRoom extends DurableObject<Env> {
       const roomCode = url.searchParams.get('roomCode') ?? ''
       // AI 대전: 봇이 B 좌석을 미리 차지한다. 사람은 A 로만 들어온다.
       const botSlot: PlayerSlot | null = url.searchParams.get('bot') === '1' ? BOT_SLOT : null
+      const lang = parseLang(url.searchParams.get('lang'))
       this.seats = { A: false, B: botSlot === BOT_SLOT }
       await this.ctx.storage.put('seats', this.seats)
-      await this.commit(armBot(createMatch(roomCode, crypto.randomUUID(), Date.now(), botSlot), Date.now()))
+      await this.commit(armBot(createMatch(roomCode, crypto.randomUUID(), Date.now(), botSlot, lang), Date.now()))
       return json({ ok: true })
     }
     if (!this.state) return json({ error: 'not found' }, 404)

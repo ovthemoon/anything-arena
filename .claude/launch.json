@@ -1,6 +1,29 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "arena-dev", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "--host", "--port", "5173", "--strictPort"], "port": 5173 }
+    {
+      "name": "arena-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--host",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "arena-dev-i18n",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--host",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
+    }
   ]
 }

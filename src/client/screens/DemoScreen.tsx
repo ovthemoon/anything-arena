@@ -72,6 +72,7 @@ const makeRound = (n: number): RoundResolved => {
 const makeMatch = (round: RoundResolved): PublicMatchState => ({
   roomCode: 'DEMO',
   matchId: 'demo',
+  lang: 'ko',
   phase: 'ROUND_PLAYBACK',
   roundId: round.roundId,
   deadlineAt: null,

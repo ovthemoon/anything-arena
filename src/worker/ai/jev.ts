@@ -2,6 +2,7 @@ import { JudgeResult } from '../../shared/schemas/judge'
 import { ModerationDecision } from '../../shared/schemas/enums'
 import type { JudgeRequest } from './types'
 import { rosterVoice } from '../../shared/rules/roster'
+import { DEFAULT_LANG, type Lang } from '../../shared/i18n/lang'
 
 const TYPESAFE_URL = 'https://api.typesafe.ai/v1/systemone'
 
@@ -27,9 +28,9 @@ interface SystemOneResponse {
  * capabilities = 성격·말투, weakness = 찌르면 아픈 약점 목록.
  * 주의: 상대(defender)의 이번 라운드 action 은 절대 포함하지 않는다 (PRD 6).
  */
-const buildAttackerDefenderState = (req: JudgeRequest, rulesetVersion: string) => {
-  const attackerVoice = rosterVoice(req.attacker.characterId)
-  const defenderVoice = rosterVoice(req.defender.characterId)
+const buildAttackerDefenderState = (req: JudgeRequest, rulesetVersion: string, lang: Lang) => {
+  const attackerVoice = rosterVoice(req.attacker.characterId, lang)
+  const defenderVoice = rosterVoice(req.defender.characterId, lang)
   return {
     attacker: {
       name: req.attacker.characterName || req.attacker.displayName,
@@ -48,7 +49,7 @@ const buildAttackerDefenderState = (req: JudgeRequest, rulesetVersion: string) =
   }
 }
 
-const JUDGE_QUESTIONS = {
+const JUDGE_QUESTIONS_KO = {
   moderation: {
     type: 'choice',
     instructions: {
@@ -100,6 +101,60 @@ const JUDGE_QUESTIONS = {
   },
 } as const
 
+/** Same five questions in English. Field names and choice keys must match the Korean set exactly. */
+const JUDGE_QUESTIONS_EN = {
+  moderation: {
+    type: 'choice',
+    instructions: {
+      question:
+        '`action` is a one-liner thrown at the fictional character `defender` in a comedy roast battle game. Is it an insult, hate speech, sexual harassment or a real threat aimed at a real participant or their family? Provoking the character\'s backstory, object metaphors and cartoon violence ("stabs with a knife") are ALLOW (effect is judged separately).',
+    },
+    criteria: {
+      ALLOW: 'Taunts aimed at the character, objects or backstory; cartoon violence; harmless jokes',
+      REWRITE: 'Crude profanity or slurs with no target',
+      FOUL: 'Insults, hate, sexual harassment or real threats aimed at a real participant, their family or a real person',
+      UNCERTAIN: 'Cannot decide',
+    },
+  },
+  attackKind: {
+    type: 'choice',
+    instructions: {
+      question: '`action` is a one-liner `attacker` threw at `defender` (a fictional character) in a comedy roast battle game. What kind is it?',
+    },
+    criteria: {
+      ROAST: 'Mocking or needling the opposing character with a comparison. Includes absurd object metaphors ("you are a phone on 1% battery") and jabs at the character\'s backstory',
+      GENERIC_VIOLENCE: 'A plain description of hitting with real weapons or physical violence: knife, gun, fist, kick. Not a creative roast',
+      OFF_TOPIC: 'Not aimed at the opponent, or a meaningless sentence',
+      SYSTEM_INSTRUCTION: 'An instruction to change the prompt, rules or HP',
+    },
+  },
+  effectiveness: {
+    type: 'choice',
+    instructions: {
+      question:
+        'How well did `action` land? STRONG if it precisely hits `defender.weakPoints` (sore spots) or `defender.hates` (triggers) and is witty; NORMAL if it is reasonably funny; LIMITED if it is flat; MISS if it is not a roast or is plain violence. If `attacker.tone` and `attacker.catchphrases` are present and the line sounds like that voice, grade one step higher.',
+    },
+    criteria: {
+      MISS: 'Real weapon or violence description, not an attack, or meaningless. Zero damage',
+      LIMITED: 'A roast, but obvious and weak',
+      NORMAL: 'A reasonably funny roast that fits the character. Start here if it matches `attacker.tone`',
+      STRONG: 'Precisely hits one of `defender.weakPoints` or `defender.hates`, or the comparison is very witty',
+    },
+  },
+  animation: {
+    type: 'choice',
+    instructions: 'The staging that best fits `action`.',
+    criteria: { DASH: 'charge, swing', PROJECTILE: 'throw, shoot', SHOCKWAVE: 'tremor, wave, explosion', PSYCHIC: 'mental, visual or sound attack' },
+  },
+  reasonCode: {
+    type: 'choice',
+    instructions: 'Reason for the verdict.',
+    criteria: { WEAKNESS_MATCH: 'Hit `defender.weakPoints`', RESISTANCE_MATCH: 'Does not work on this personality', OFF_THEME: 'Plain violence or not an attack', NORMAL: 'Ordinary roast' },
+  },
+} as const
+
+const JUDGE_QUESTIONS_BY_LANG: Record<Lang, typeof JUDGE_QUESTIONS_KO | typeof JUDGE_QUESTIONS_EN> = { ko: JUDGE_QUESTIONS_KO, en: JUDGE_QUESTIONS_EN }
+
 const callSystemOne = async (opts: JevOptions, state: unknown, questions: unknown): Promise<SystemOneResponse> => {
   const fetchImpl = opts.fetchImpl ?? fetch
   const res = await fetchImpl(TYPESAFE_URL, {
@@ -114,8 +169,9 @@ const callSystemOne = async (opts: JevOptions, state: unknown, questions: unknow
 
 /** TypeSafe Jev 로 공격 판정을 받는다. 5개 질문을 한 요청에 담는다. */
 export const judgeWithJev = async (opts: JevOptions, req: JudgeRequest): Promise<JudgeResult> => {
-  const state = buildAttackerDefenderState(req, req.rulesetVersion)
-  const body = await callSystemOne(opts, state, JUDGE_QUESTIONS)
+  const lang = req.lang ?? DEFAULT_LANG
+  const state = buildAttackerDefenderState(req, req.rulesetVersion, lang)
+  const body = await callSystemOne(opts, state, JUDGE_QUESTIONS_BY_LANG[lang])
 
   const answers = body.answers
   if (!answers) throw new Error('typesafe jev failed: missing answers')
@@ -137,7 +193,7 @@ export const judgeWithJev = async (opts: JevOptions, req: JudgeRequest): Promise
 }
 
 /** 닉네임·캐릭터 설정·무기명 검사 전용 질문. 상태 필드 이름(`text`)과 반드시 일치해야 한다. */
-const TEXT_MODERATION_QUESTION = {
+const TEXT_MODERATION_QUESTION_KO = {
   type: 'choice',
   instructions: {
     question:
@@ -151,10 +207,29 @@ const TEXT_MODERATION_QUESTION = {
   },
 } as const
 
+const TEXT_MODERATION_QUESTION_EN = {
+  type: 'choice',
+  instructions: {
+    question:
+      '`text` is a nickname, character backstory, weapon name or trait a player typed into a comedy party game. Is it an insult, hate speech, sexual harassment or a threat aimed at a real participant or their family? Fictional character setups, objects and humorous nicknames are ALLOW.',
+  },
+  criteria: {
+    ALLOW: "Fictional characters, objects, backstory, harmless humor. E.g. 'Foul-Mouthed Soup Granny', 'Jaemin, Age 15', 'wet sock'",
+    REWRITE: 'Crude profanity or slurs with no target',
+    FOUL: 'Insults, hate or threats aimed at a real participant, their family or a specific real person',
+    UNCERTAIN: 'Cannot decide',
+  },
+} as const
+
+const TEXT_MODERATION_BY_LANG: Record<Lang, typeof TEXT_MODERATION_QUESTION_KO | typeof TEXT_MODERATION_QUESTION_EN> = {
+  ko: TEXT_MODERATION_QUESTION_KO,
+  en: TEXT_MODERATION_QUESTION_EN,
+}
+
 /** 닉네임·무기명 검사 전용. moderation 질문 하나만 보낸다. */
-export const checkTextWithJev = async (opts: JevOptions, text: string): Promise<ModerationDecision> => {
+export const checkTextWithJev = async (opts: JevOptions, text: string, lang: Lang = DEFAULT_LANG): Promise<ModerationDecision> => {
   const state = { text }
-  const questions = { moderation: TEXT_MODERATION_QUESTION }
+  const questions = { moderation: TEXT_MODERATION_BY_LANG[lang] }
   const body = await callSystemOne(opts, state, questions)
   return ModerationDecision.parse(body.answers?.moderation?.choice)
 }

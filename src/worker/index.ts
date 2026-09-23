@@ -5,6 +5,7 @@ import { jsonResponse } from './lib/response'
 import { BattleRoom, INTERNAL_HEADER } from './rooms/battle-room'
 import { generateRoomCode, isAllowedOrigin, isValidRoomCode, issueSeatToken, readSeatCookie, seatCookie, verifySeatToken } from './security/session'
 import type { ConnectionRole } from '../shared/schemas/enums'
+import { parseLang, type Lang } from '../shared/i18n/lang'
 
 export { BattleRoom }
 
@@ -17,11 +18,17 @@ const DO_ORIGIN = 'https://battle-room'
 const roomStub = (env: Env, code: string) => env.BATTLE_ROOM.get(env.BATTLE_ROOM.idFromName(code))
 
 /** Worker → DO 내부 호출. 클라이언트 요청을 그대로 /internal 로 보내지 않는다. */
-const callInternal = (env: Env, code: string, action: 'create' | 'join' | 'state', method = 'POST', held: 'A' | 'B' | null = null, bot = false): Promise<Response> => {
+interface CreateOptions {
+  bot: boolean
+  lang: Lang
+}
+
+const callInternal = (env: Env, code: string, action: 'create' | 'join' | 'state', method = 'POST', held: 'A' | 'B' | null = null, create: CreateOptions | null = null): Promise<Response> => {
   const url = new URL(`${DO_ORIGIN}/internal/${action}`)
   url.searchParams.set('roomCode', code)
   if (held) url.searchParams.set('held', held)
-  if (bot) url.searchParams.set('bot', '1')
+  if (create?.bot) url.searchParams.set('bot', '1')
+  if (create) url.searchParams.set('lang', create.lang)
   return roomStub(env, code).fetch(new Request(url, { method, headers: { [INTERNAL_HEADER]: '1' } }))
 }
 
@@ -34,12 +41,13 @@ const withSeatCookie = async <T>(env: Env, request: Request, roomCode: string, r
   return res
 }
 
-/** `?mode=solo` 면 B 좌석에 AI 봇이 앉는다. */
+/** `?mode=solo` 면 B 좌석에 AI 봇이 앉는다. `?lang=en|ko` 는 방 언어(기본 ko). */
 const createRoom = async (request: Request, env: Env): Promise<Response> => {
-  const isSolo = new URL(request.url).searchParams.get('mode') === 'solo'
+  const params = new URL(request.url).searchParams
+  const create: CreateOptions = { bot: params.get('mode') === 'solo', lang: parseLang(params.get('lang')) }
   for (let i = 0; i < ROOM_CREATE_ATTEMPTS; i++) {
     const code = generateRoomCode()
-    const res = await callInternal(env, code, 'create', 'POST', null, isSolo)
+    const res = await callInternal(env, code, 'create', 'POST', null, create)
     if (res.ok) return withSeatCookie(env, request, code, 'SCREEN', { roomCode: code, joinUrl: `${new URL(request.url).origin}/play/${code}` })
     if (res.status !== 409) return fail('Room creation failed', 500)
   }

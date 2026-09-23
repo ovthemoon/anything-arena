@@ -1,6 +1,6 @@
 import type { MatchPhase, PlayerSlot } from '../../shared/schemas/enums'
 import type { Outcome } from '../battle/outcome'
-import type { SfxName } from './sfx'
+import type { BgmTrack, SfxName } from './sfx'
 
 /** 어떤 장면에서 어떤 효과음을 낼지 정하는 순수 규칙. 화면 코드는 여기 결과만 재생한다. */
 
@@ -12,6 +12,20 @@ const OUTCOME_CUE: Record<Outcome, SfxName> = {
 }
 
 export const outcomeCue = (outcome: Outcome): SfxName => OUTCOME_CUE[outcome]
+
+export interface BgmContext {
+  isLobby: boolean
+  isBattle: boolean
+  /** 결정타 직전 정적: 달려드는 동안 음악을 끊는다 */
+  isSilenced: boolean
+}
+
+export const bgmTrackFor = ({ isLobby, isBattle, isSilenced }: BgmContext): BgmTrack | null => {
+  if (isSilenced) return null
+  if (isBattle) return 'battle'
+  if (isLobby) return 'lobby'
+  return null
+}
 
 /** 플레이어는 자기 결과대로, 공용 화면은 승자가 있으면 팡파르. 무승부는 둘 다 lose. */
 export const resultCue = (winner: PlayerSlot | null | undefined, you: PlayerSlot | null): SfxName => {

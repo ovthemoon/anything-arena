@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AttackEvent, RoundResolved } from '../../shared/schemas/match'
 import { finishingIndex } from './finishing'
+import { runPlayback } from './sequencer'
 import { buildAttackTimeline, type StepKind } from './timeline'
 
 export interface PlaybackState {
@@ -20,13 +21,20 @@ const attacksInOrder = (playback: RoundResolved): [AttackEvent, AttackEvent] | n
   return first && second ? [first, second] : null
 }
 
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms))
+
 /**
  * round_resolved 하나를 시간 순서로 재생한다. 서버 값은 이미 확정돼 있고,
  * 이 훅은 "지금 어느 장면인지"만 알려준다. playback 이 바뀌면 처음부터.
+ * hold: 해설 장면에서 추가로 기다릴 것(해설 음성 종료). 도중에 바뀌어도 최신 것을 쓴다.
  */
-export function usePlayback(playback: RoundResolved | null, reducedMotion: boolean): PlaybackState {
+export function usePlayback(playback: RoundResolved | null, reducedMotion: boolean, hold?: (attack: AttackEvent) => Promise<void>): PlaybackState {
   const [state, setState] = useState<PlaybackState>(IDLE)
   const key = playback ? `${playback.matchId}:${playback.roundId}:${playback.eventSeq}` : null
+  const holdRef = useRef(hold)
+  useEffect(() => {
+    holdRef.current = hold
+  }, [hold])
 
   useEffect(() => {
     if (!playback) {
@@ -40,21 +48,14 @@ export function usePlayback(playback: RoundResolved | null, reducedMotion: boole
     }
 
     const finishing = finishingIndex(playback)
-    const timers: number[] = []
-    let elapsed = 0
-    for (const index of [0, 1] as const) {
-      const isFinishing = finishing === index
-      for (const step of buildAttackTimeline(reducedMotion, { isFinishing })) {
-        const at = elapsed
-        timers.push(window.setTimeout(() => setState({ index, attack: attacks[index], step: step.kind, done: false, isFinishing }), at))
-        elapsed += step.ms
-      }
-    }
-    timers.push(window.setTimeout(() => setState({ index: 1, attack: attacks[1], step: null, done: true, isFinishing: false }), elapsed))
-
-    return () => {
-      for (const t of timers) window.clearTimeout(t)
-    }
+    return runPlayback({
+      attacks,
+      steps: [buildAttackTimeline(reducedMotion, { isFinishing: finishing === 0 }), buildAttackTimeline(reducedMotion, { isFinishing: finishing === 1 })],
+      finishing,
+      sleep,
+      hold: (attack) => holdRef.current?.(attack) ?? Promise.resolve(),
+      onState: setState,
+    })
     // key 가 playback 의 정체성. reducedMotion 이 중간에 바뀌면 다시 재생해도 무방.
   }, [key, reducedMotion]) // eslint-disable-line react-hooks/exhaustive-deps
 
