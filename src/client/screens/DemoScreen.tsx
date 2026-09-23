@@ -7,12 +7,13 @@ import { usePlayback } from '../battle/usePlayback'
 import { usePrefs } from '../battle/usePrefs'
 import { totalMs, buildAttackTimeline } from '../battle/timeline'
 import { BattleScreen } from './BattleScreen'
+import { ResultScreen } from './ResultScreen'
 import '../battle/animations.css'
 import '../battle/ui.css'
 import './screens.css'
 
 /**
- * /demo — 서버 없이 연출만 반복 재생하는 미리보기.
+ * /demo — 서버 없이 연출만 반복 재생하는 미리보기. /demo?result 는 결과 화면.
  * 네 가지 결과(정통·일반·막아냄·빗나감)와 네 가지 이동 유형을 돌아가며 보여준다.
  */
 
@@ -96,10 +97,12 @@ export function DemoScreen() {
     return () => window.clearTimeout(t)
   }, [n, prefs.reducedMotion])
 
+  const isResultPreview = window.location.search.includes('result')
+  const match = makeMatch(round)
   const state: ClientState = {
     connection: 'open',
     you: 'SCREEN',
-    match: makeMatch(round),
+    match: isResultPreview ? { ...match, phase: 'FINISHED', winner: 'A', history: [round] } : match,
     playback: round,
     commentary: {
       [round.attacks[0].eventId]: { text: '충전 단자까지 젖었습니다!', audioPath: null, validUntil: Date.now() + 60_000 },
@@ -108,6 +111,10 @@ export function DemoScreen() {
     toast: null,
     lastActionId: null,
     rejected: null,
+  }
+
+  if (isResultPreview) {
+    return <ResultScreen state={state} you={null} characterIds={{ A: 'grandma', B: 'jaemmin' }} send={() => undefined} />
   }
 
   return (
