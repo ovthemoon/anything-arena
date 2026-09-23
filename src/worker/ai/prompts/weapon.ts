@@ -12,10 +12,11 @@ export const WeaponGenOutput = z.object({
   capabilities: z.array(z.string().min(1).max(12)).min(1).max(2),
   weakness: z.string().min(1).max(12),
   visualTag: VisualTag,
-  techniques: z.tuple([
-    z.object({ name: z.string().min(1).max(12), actionText: bounded(LIMITS.ACTION_TEXT), animation: AnimationType }),
-    z.object({ name: z.string().min(1).max(12), actionText: bounded(LIMITS.ACTION_TEXT), animation: AnimationType }),
-  ]),
+  /** OpenAI strict JSON schema 는 tuple(items 배열)을 거부하므로 길이 2 배열로 받는다. */
+  techniques: z
+    .array(z.object({ name: z.string().min(1).max(12), actionText: bounded(LIMITS.ACTION_TEXT), animation: AnimationType }))
+    .min(2)
+    .max(2),
 })
 export type WeaponGenOutput = z.infer<typeof WeaponGenOutput>
 

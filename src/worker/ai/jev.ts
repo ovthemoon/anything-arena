@@ -101,10 +101,25 @@ export const judgeWithJev = async (opts: JevOptions, req: JudgeRequest): Promise
   return JudgeResult.parse(candidate)
 }
 
-/** 닉네임·무기명·자유 입력 검사 전용. moderation 질문 하나만 보낸다. */
+/** 닉네임·캐릭터 설정·무기명 검사 전용 질문. 상태 필드 이름(`text`)과 반드시 일치해야 한다. */
+const TEXT_MODERATION_QUESTION = {
+  type: 'choice',
+  instructions: {
+    question:
+      '`text` 는 코미디 파티 게임에서 플레이어가 입력한 닉네임·캐릭터 설정·무기 이름·특징이다. 실제 참가자나 그 가족을 향한 모욕·혐오·성적 괴롭힘·위해 협박인가? 허구의 인물 설정, 사물, 유머러스한 별명은 ALLOW.',
+  },
+  criteria: {
+    ALLOW: "허구 캐릭터·사물·설정·무해한 유머. 예: '욕쟁이 할머니', '이잼민', '젖은 양말'",
+    REWRITE: '대상 없는 거친 욕설·비속어',
+    FOUL: '실제 참가자·가족·특정 실존 인물을 향한 모욕·혐오·협박',
+    UNCERTAIN: '판단 불가',
+  },
+} as const
+
+/** 닉네임·무기명 검사 전용. moderation 질문 하나만 보낸다. */
 export const checkTextWithJev = async (opts: JevOptions, text: string): Promise<ModerationDecision> => {
   const state = { text }
-  const questions = { moderation: JUDGE_QUESTIONS.moderation }
+  const questions = { moderation: TEXT_MODERATION_QUESTION }
   const body = await callSystemOne(opts, state, questions)
   return ModerationDecision.parse(body.answers?.moderation?.choice)
 }

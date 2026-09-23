@@ -48,7 +48,7 @@ export const createOpenRouter = (apiKey: string, fetchImpl: typeof fetch = fetch
       }),
       signal: AbortSignal.timeout(opts.timeoutMs),
     })
-    if (!res.ok) throw new Error(`openrouter chat failed: status ${res.status}`)
+    if (!res.ok) throw new Error(`openrouter chat failed: status ${res.status} ${(await res.text().catch(() => '')).slice(0, 300)}`)
     const body = (await res.json()) as { choices: Array<{ message: { content: string } }> }
     const content = body.choices?.[0]?.message?.content
     if (typeof content !== 'string') throw new Error('openrouter chat failed: missing content')

@@ -44,7 +44,8 @@ export const generateCommentaryWithOpenRouter = async (
       return fallbackFor(event.eventId)
     }
     return text
-  } catch {
+  } catch (e) {
+    console.warn('[ai/commentary] generation failed', String(e).slice(0, 200))
     return fallbackFor(event.eventId)
   }
 }

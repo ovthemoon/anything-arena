@@ -29,7 +29,7 @@
   // 공개 설정값 (PRD 부록 C). 비밀 키는 여기 두지 않고 .env / wrangler secret 으로
   "vars": {
     "APP_ENV": "production",
-    "AI_MODE": "mock",
+    "AI_MODE": "real",
     "ALLOWED_ORIGINS": "http://localhost:5173",
     "TTS_VOICE": "Korean_SweetGirl",
     "IMAGE_MODEL": "google/gemini-3.1-flash-lite-image",
@@ -44,7 +44,7 @@
     "MAX_FOULS_BEFORE_PRESET_ONLY": "2",
     "RECONNECT_GRACE_MS": "30000",
     "IDLE_ROOM_TTL_MS": "600000",
-    "TEXT_MODEL": "openai/gpt-5-mini",
+    "TEXT_MODEL": "openai/gpt-4.1-mini",
     "JEV_MODEL": "jev-latest",
     "TTS_MODEL": "minimax/speech-2.8-turbo",
     "PROMPT_VERSION": "v0.1-draft"
