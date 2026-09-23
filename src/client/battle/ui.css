@@ -79,7 +79,8 @@
 @media (orientation: portrait) {
   .arena {
     height: 100svh;
-    background: url('/assets/mobile-bg.png') center / cover no-repeat, #0b1230;
+    /* 세로 화면도 같은 골목 배경. 가로 그림을 세로에 채우니 가운데(가게 앞 골목)가 남도록 중앙 정렬 */
+    background: url('/assets/arena-bg.png') 50% 40% / cover no-repeat, #0b1230;
   }
   /* 세로 화면은 폭이 좁으니 캐릭터 크기를 폭 기준으로 잡는다 (aspect-ratio 1 → 높이 = 폭) */
   .char { width: 44%; height: auto; bottom: 38%; }
