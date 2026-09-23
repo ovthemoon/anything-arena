@@ -37,6 +37,7 @@ export const WeaponProfile = z.object({
   capabilities: z.array(z.string().min(1)).min(1).max(2),
   weakness: z.string().min(1),
   visualTag: VisualTag,
-  techniques: z.tuple([PreparedTechnique, PreparedTechnique]),
+  /** 추천 한 마디 목록. 출연진 카드는 10개, AI 생성 무기는 2개. */
+  techniques: z.array(PreparedTechnique).min(2).max(10),
 })
 export type WeaponProfile = z.infer<typeof WeaponProfile>

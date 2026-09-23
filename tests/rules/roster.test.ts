@@ -8,7 +8,9 @@ describe('roster', () => {
       const card = characterCard(id, 'm1')
       expect(WeaponProfile.safeParse(card).success).toBe(true)
       expect(card.characterId).toBe(id)
-      expect(card.techniques).toHaveLength(2)
+      expect(card.techniques).toHaveLength(10)
+      expect(new Set(card.techniques.map((x) => x.actionText)).size).toBe(10)
+      for (const x of card.techniques) expect(Array.from(x.actionText).length).toBeLessThanOrEqual(60)
     }
   })
 })

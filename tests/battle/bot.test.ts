@@ -24,12 +24,13 @@ describe('AI opponent bot', () => {
     expect(s.roundId).toBe(1)
   })
 
-  it('alternates between the two suggested roasts by round', () => {
+  it('walks through the roast pool by round', () => {
     const armed = armBot(createMatch('ROOM', 'm1', 1000, BOT_SLOT), 1000)
     const r1 = setReady(setWeapon(armed, 'A', characterCard('grandma', 'm1'), '나'), 'A', 2000)
     expect(pickBotTechniqueId(r1, BOT_SLOT)).toBe('jaemmin-r1')
     expect(pickBotTechniqueId({ ...r1, roundId: 2 }, BOT_SLOT)).toBe('jaemmin-r2')
-    expect(pickBotTechniqueId({ ...r1, roundId: 3 }, BOT_SLOT)).toBe('jaemmin-r1')
+    expect(pickBotTechniqueId({ ...r1, roundId: 3 }, BOT_SLOT)).toBe('jaemmin-r3')
+    expect(pickBotTechniqueId({ ...r1, roundId: 11 }, BOT_SLOT)).toBe('jaemmin-r1')
   })
 
   it('keeps botSlot out of the public state', () => {

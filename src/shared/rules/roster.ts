@@ -12,11 +12,19 @@ export interface RosterEntry {
   persona: [string, string]
   /** 이걸 찌르면 STRONG. 화면에도 힌트로 보여준다. */
   weakPoints: [string, string, string]
-  /** 말이 안 떠오를 때 누르는 추천 한 마디 2개. */
-  suggestedRoasts: [{ label: string; text: string; animation: WeaponProfile['techniques'][0]['animation'] }, { label: string; text: string; animation: WeaponProfile['techniques'][0]['animation'] }]
+  /** 말이 안 떠오를 때 누르는 추천 한 마디. 앞 2개는 구버전 호환용(suggestedRoasts 와 동일). */
+  suggestedRoasts: [Roast, Roast]
+  /** 추천 한 마디 10개. 카드의 techniques 로 그대로 실려 휴대폰 칩·봇·반칙 상태 버튼에 쓰인다. */
+  roastPool: Roast[]
   visualTag: WeaponProfile['visualTag']
   /** 말맛. 판정은 '이 사람 말투답게 긁었는지'를 보고, 해설은 이 말투를 살짝 흉내낸다. 숫자에는 영향 없음. */
   voice: CharacterVoice
+}
+
+export interface Roast {
+  label: string
+  text: string
+  animation: WeaponProfile['techniques'][number]['animation']
 }
 
 export interface CharacterVoice {
@@ -39,6 +47,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '국자 후려치기', text: '숙제는 했냐? 국자로 등짝 스매싱 들어간다', animation: 'DASH' },
     ],
     visualTag: 'HEAVY',
+    roastPool: [
+      { label: '국물 회오리', text: '너 같은 건 순대국밥 국물에 말아 먹어도 간이 안 맞겠다', animation: 'SHOCKWAVE' },
+      { label: '국자 후려치기', text: '숙제는 했냐? 국자로 등짝 스매싱 들어간다', animation: 'DASH' },
+      { label: '밥은 먹고', text: '어이구 이놈아, 밥은 먹고 다니냐? 얼굴이 순대 껍데기만 하네', animation: 'DASH' },
+      { label: '20년 짬', text: '내가 국밥 20년 팔면서 너 같은 진상 300명은 봤다', animation: 'SHOCKWAVE' },
+      { label: '깍두기 취급', text: '너는 국밥집 깍두기야. 있으나 없으나 아무도 신경 안 써', animation: 'PROJECTILE' },
+      { label: '공깃밥 추가', text: '말대꾸할 힘 있으면 공깃밥 추가나 해라, 이놈아', animation: 'DASH' },
+      { label: '식은 국밥', text: '열정이 식은 국밥이네. 데워 줄까? 국자로?', animation: 'PSYCHIC' },
+      { label: '설거지', text: '그 입으로 설거지나 해. 우리 가게 3년은 해야 사람 되겠다', animation: 'DASH' },
+      { label: '손님 취급', text: '어이구, 손님이면 앉아서 먹기나 하지 왜 말이 많아', animation: 'PSYCHIC' },
+      { label: '무릎보다', text: '내 무릎보다 네 인생이 더 삐걱거린다, 이놈아', animation: 'SHOCKWAVE' },
+    ],
     voice: {
       tone: '반말 호통. 문장 끝에 "이놈아", "어이구" 를 붙이고 국밥·장사 비유로 후려친다',
       catchphrases: ['어이구 이놈아', '밥은 먹고 다니냐'],
@@ -55,6 +75,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '키보드 연타', text: '할머니 키오스크 앞에서 10분 서 있던 거 다 봤음', animation: 'PROJECTILE' },
     ],
     visualTag: 'ELECTRIC',
+    roastPool: [
+      { label: '응? 반사', text: '응? 그거 요즘 아무도 안 씀 ㅋㅋ 구닥다리 인증', animation: 'PSYCHIC' },
+      { label: '키보드 연타', text: '키오스크 앞에서 10분 서 있던 거 다 봤음 ㅋㅋㅋ', animation: 'PROJECTILE' },
+      { label: '응? 아닌데?', text: '응? 아닌데? 그건 님 생각이고 ㅋㅋ', animation: 'PSYCHIC' },
+      { label: '틀린 그림', text: '말하는 거 보니까 유튜브 댓글창 틀린 그림 찾기 수준 ㅋㅋ', animation: 'PROJECTILE' },
+      { label: '렉 걸림', text: '말이 왜 이렇게 느려요? 뇌에 렉 걸리셨나 ㅋㅋ', animation: 'SHOCKWAVE' },
+      { label: '개웃기네', text: 'ㅋㅋ 개웃기네 그걸 공격이라고 하심?', animation: 'PSYCHIC' },
+      { label: '초딩도', text: '그거 우리 반 초딩도 안 하는 소리인데 ㅋㅋ', animation: 'PROJECTILE' },
+      { label: '업데이트', text: '님 업데이트 좀 하셈. 2010년에 멈춰 있음', animation: 'SHOCKWAVE' },
+      { label: '스킵', text: '말 길어서 스킵함 ㅋㅋ 요약본 있음?', animation: 'PSYCHIC' },
+      { label: '현실 튜토리얼', text: '현실 튜토리얼도 못 깬 분이 왜 저한테 훈수 ㅋㅋ', animation: 'DASH' },
+    ],
     voice: {
       tone: '초성·ㅋㅋ 섞인 짧은 채팅체. "응? 아닌데?" 로 받아치고 게임·유튜브 비유를 쓴다',
       catchphrases: ['응? 아닌데?', 'ㅋㅋ 개웃기네'],
@@ -71,6 +103,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '보고서 반려', text: '그 논리면 보고서 첫 줄에서 반려야. 다시 써 와, 오늘까지', animation: 'PROJECTILE' },
     ],
     visualTag: 'SHAKY',
+    roastPool: [
+      { label: '퇴근 각', text: '너랑 말 섞는 시간도 야근 수당 나오냐? 안 나오면 나 퇴근한다', animation: 'DASH' },
+      { label: '보고서 반려', text: '그 논리면 보고서 첫 줄에서 반려야. 다시 써 와, 오늘까지', animation: 'PROJECTILE' },
+      { label: '회의 소집', text: '하... 그 말 하려고 회의 잡은 거예요? 30분 날렸네', animation: 'PSYCHIC' },
+      { label: '엑셀 오류', text: '네 인생 엑셀로 열면 #REF! 만 뜰 듯', animation: 'PROJECTILE' },
+      { label: '인수인계', text: '너 같은 사람 인수인계 받으면 사표부터 쓴다', animation: 'DASH' },
+      { label: '상여금', text: '그 정도 실력이면 상여금은커녕 회식비도 아깝다', animation: 'SHOCKWAVE' },
+      { label: '이거 오늘까지죠', text: '하... 이거 오늘까지죠? 그럼 너부터 정리 들어갑니다', animation: 'DASH' },
+      { label: '참조 빼기', text: '앞으로 내 인생 메일 참조에서 너 빼겠습니다', animation: 'PROJECTILE' },
+      { label: '수정 요청', text: '네 존재 자체가 수정 요청 사항인데 반영은 언제 돼요?', animation: 'PSYCHIC' },
+      { label: '연차 사용', text: '너 상대하느니 연차 쓰고 집에서 천장 볼래', animation: 'SHOCKWAVE' },
+    ],
     voice: {
       tone: '지친 직장인 말투. "하...", "아 진짜" 로 시작하고 회사·보고서·회의 비유로 건조하게 받아친다',
       catchphrases: ['하... 이거 오늘까지죠?', '퇴근하겠습니다'],
@@ -87,6 +131,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '폐기 처리', text: '유통기한 지난 말은 폐기함에 넣어드릴게요. 봉투는 20원입니다', animation: 'SHOCKWAVE' },
     ],
     visualTag: 'ICE',
+    roastPool: [
+      { label: '바코드 스캔', text: '삑. 조회 결과: 1+1 행사 붙여도 안 나가는 재고입니다', animation: 'PROJECTILE' },
+      { label: '폐기 처리', text: '유통기한 지난 말은 폐기함에 넣어드릴게요. 봉투는 20원입니다', animation: 'SHOCKWAVE' },
+      { label: '봉투 필요', text: '봉투 필요하세요? 그 말은 담아 갈 가치가 없어서요', animation: 'PSYCHIC' },
+      { label: '포인트 적립', text: '포인트 적립하세요? 말 한마디에 0점 적립됐습니다', animation: 'PROJECTILE' },
+      { label: '진상 300명', text: '진상 300명 봤는데 순위 갱신하셨네요. 축하드립니다', animation: 'PSYCHIC' },
+      { label: '삼각김밥', text: '삼각김밥 포장도 못 뜯을 분이 저를 뜯으시려고요', animation: 'DASH' },
+      { label: '재고 없음', text: '삑. 그 논리, 재고 없습니다. 입고 예정도 없어요', animation: 'PROJECTILE' },
+      { label: '반품 불가', text: '한 번 뱉은 말은 반품 안 됩니다. 영수증 있어도요', animation: 'SHOCKWAVE' },
+      { label: '야간 할증', text: '새벽에 그 소리 하시면 야간 할증 붙습니다', animation: 'PSYCHIC' },
+      { label: '현금 영수증', text: '현금 영수증 해드릴까요? 오늘 하신 말 전부 지출 처리해서요', animation: 'DASH' },
+    ],
     voice: {
       tone: '높낮이 없는 존댓말. 편의점 멘트("~하세요?", "~입니다")로 비꼬고 절대 흥분하지 않는다',
       catchphrases: ['봉투 필요하세요?', '삑.'],
@@ -103,6 +159,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '스틱 찍기', text: '그 체력으로 무슨 말싸움이야~ 청계산 입구에서 벌써 주저앉을 사람이', animation: 'DASH' },
     ],
     visualTag: 'SHINY',
+    roastPool: [
+      { label: '공지 폭탄', text: '[공지] 이번 주 산행 불참자 명단 1번에 너 이름 올린다~ ^^ 필독!', animation: 'PROJECTILE' },
+      { label: '스틱 찍기', text: '그 체력으로 무슨 말싸움이야~ 청계산 입구에서 벌써 주저앉을 사람이', animation: 'DASH' },
+      { label: '굿모닝', text: '굿모닝~ 좋은 아침입니다 ^^ 새벽 5시니까 이제 일어나세요~', animation: 'SHOCKWAVE' },
+      { label: '회비 미납', text: '[공지] 회비 미납자는 발언권 없습니다~ 정산 먼저 하세요 ^^', animation: 'PROJECTILE' },
+      { label: '정상 인증샷', text: '정상 인증샷 한 장 없는 사람이 인생을 논해~? 허허 ^^', animation: 'PSYCHIC' },
+      { label: '읽씹 감지', text: '내 카톡 읽씹한 거 다 알아요~ 산에서 보자고요 ^^', animation: 'PSYCHIC' },
+      { label: '막걸리 당번', text: '[공지] 너는 이번 주 막걸리 당번~ 하산까지 들고 와요 ^^', animation: 'DASH' },
+      { label: '인생은 산', text: '인생은 산이야~ 넌 아직 주차장에서 신발 끈 매는 중이고 ^^', animation: 'SHOCKWAVE' },
+      { label: '단체 사진', text: '단체 사진에서 너만 흔들렸더라~ 인생도 흔들리는 거 아냐? ^^', animation: 'PROJECTILE' },
+      { label: '하산 명령', text: '[공지] 지금 하산하세요~ 더 올라오면 구조대 불러야 해요 ^^', animation: 'DASH' },
+    ],
     voice: {
       tone: '물결표(~)와 ^^ 를 남발하는 아저씨 카톡체. [공지] 로 시작하고 산·정상·회비 비유로 찍어 누른다',
       catchphrases: ['굿모닝~ 좋은 아침입니다 ^^', '[공지] 필독!'],
@@ -119,6 +187,18 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       { label: '드라이어 폭풍', text: '그 머리로 나한테 덤벼? 뿌리부터 비어 가는 거 다 보이는데~', animation: 'SHOCKWAVE' },
     ],
     visualTag: 'SOFT',
+    roastPool: [
+      { label: '소문 방송', text: '어머 자기야, 자기 얘기 우리 가게에서 벌써 다 돌았어~ 좋은 얘기는 아니더라', animation: 'PSYCHIC' },
+      { label: '드라이어 폭풍', text: '그 머리로 나한테 덤벼? 뿌리부터 비어 가는 거 다 보이는데~', animation: 'SHOCKWAVE' },
+      { label: '안 하려고 했는데', text: '내가 이 얘기 안 하려고 했는데~ 자기 옆집이 그러더라, 자기 좀 그렇다고', animation: 'PSYCHIC' },
+      { label: '염색 실패', text: '어머 자기야, 그 말은 셀프 염색처럼 얼룩덜룩하네~', animation: 'PROJECTILE' },
+      { label: '예약 노쇼', text: '자기 인생도 노쇼야? 예약만 해 놓고 아무것도 안 오네~', animation: 'DASH' },
+      { label: '숱 정리', text: '말이 너무 많아서 숱 좀 쳐야겠다~ 반은 덜어내자, 응?', animation: 'DASH' },
+      { label: '단골 평가', text: '우리 단골들이 자기 보고 그러더라, 볼 게 없대~ 어머 미안', animation: 'PSYCHIC' },
+      { label: '파마 풀림', text: '그 자신감 파마처럼 이틀이면 풀려~ 내가 봤잖아', animation: 'SHOCKWAVE' },
+      { label: '가위 들기', text: '어머, 자기 그 말 계속하면 나 가위 들어야 돼~ 앞머리부터', animation: 'PROJECTILE' },
+      { label: '동네 1등', text: '자기가 이 동네 1등이야, 얘깃거리로는~ 어머 자기야 축하해', animation: 'PSYCHIC' },
+    ],
     voice: {
       tone: '"어머 자기야~" 로 시작하는 살가운 반말. 웃으면서 남의 사정을 들먹이고 머리·헤어스타일 비유로 긁는다',
       catchphrases: ['어머 자기야~', '내가 이 얘기 안 하려고 했는데'],
@@ -148,9 +228,6 @@ export const characterCard = (id: CharacterId, matchId: string): WeaponProfile =
     capabilities: [...r.persona],
     weakness: r.weakPoints.join(', '),
     visualTag: r.visualTag,
-    techniques: [
-      { id: `${id}-r1`, name: r.suggestedRoasts[0].label, actionText: r.suggestedRoasts[0].text, animation: r.suggestedRoasts[0].animation },
-      { id: `${id}-r2`, name: r.suggestedRoasts[1].label, actionText: r.suggestedRoasts[1].text, animation: r.suggestedRoasts[1].animation },
-    ],
+    techniques: r.roastPool.map((roast, i) => ({ id: `${id}-r${i + 1}`, name: roast.label, actionText: roast.text, animation: roast.animation })),
   }
 }
