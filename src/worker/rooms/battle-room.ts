@@ -9,6 +9,7 @@ import { type RoomCtx, errorMessage } from './room-context'
 import { handleActionSubmit } from './handlers/action'
 import { handleReady, handleRematch, handleWeaponSubmit } from './handlers/lobby'
 import { onAlarm } from './handlers/round'
+import { BOT_SLOT, armBot } from './handlers/bot'
 
 export const INTERNAL_HEADER = 'X-Internal'
 export const INTERNAL_PREFIX = '/internal/'
@@ -60,9 +61,11 @@ export class BattleRoom extends DurableObject<Env> {
     if (action === 'create') {
       if (this.state) return json({ error: 'exists' }, 409)
       const roomCode = url.searchParams.get('roomCode') ?? ''
-      this.seats = { A: false, B: false }
+      // AI 대전: 봇이 B 좌석을 미리 차지한다. 사람은 A 로만 들어온다.
+      const botSlot: PlayerSlot | null = url.searchParams.get('bot') === '1' ? BOT_SLOT : null
+      this.seats = { A: false, B: botSlot === BOT_SLOT }
       await this.ctx.storage.put('seats', this.seats)
-      await this.commit(createMatch(roomCode, crypto.randomUUID(), Date.now()))
+      await this.commit(armBot(createMatch(roomCode, crypto.randomUUID(), Date.now(), botSlot), Date.now()))
       return json({ ok: true })
     }
     if (!this.state) return json({ error: 'not found' }, 404)

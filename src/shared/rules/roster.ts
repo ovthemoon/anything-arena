@@ -33,9 +33,9 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
     name: '이잼민',
     description: '내 나이 15 이잼민. "응?" 한마디 말대꾸와 키보드가 무기.',
     persona: ['"응? 아닌데?" 무한 말대꾸', '키보드 워리어 급 타이핑 속도'],
-    weakPoints: ['엄마·숙제·용돈', '학원·시험', '틀딱·구닥다리 소리'],
+    weakPoints: ['엄마·숙제·용돈', '학원·시험', '구닥다리·옛날 사람 소리'],
     suggestedRoasts: [
-      { label: '응? 반사', text: '응? 할머니 그거 요즘 아무도 안 씀 ㅋㅋ 틀딱 인증', animation: 'PSYCHIC' },
+      { label: '응? 반사', text: '응? 할머니 그거 요즘 아무도 안 씀 ㅋㅋ 구닥다리 인증', animation: 'PSYCHIC' },
       { label: '키보드 연타', text: '할머니 키오스크 앞에서 10분 서 있던 거 다 봤음', animation: 'PROJECTILE' },
     ],
     visualTag: 'ELECTRIC',

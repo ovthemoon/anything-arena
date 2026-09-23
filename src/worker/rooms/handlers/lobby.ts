@@ -7,6 +7,7 @@ import { DEFAULT_CHARACTER_FOR_SLOT, characterCard } from '../../../shared/rules
 import { SLOTS, createMatch, setConnected, setReady, setWeapon } from '../../game/engine'
 import { type RoomCtx, errorMessage, withTimeout } from '../room-context'
 import { announceRoundStarted } from './round'
+import { armBot, submitBotAction } from './bot'
 
 type WeaponSubmit = Extract<ClientMessage, { type: 'weapon_submit' }>
 
@@ -87,21 +88,23 @@ export const handleReady = async (ctx: RoomCtx, slot: PlayerSlot, matchId: strin
   if (!isPreMatch(ctx)) return
   // 디버그 편의: 무기 없이 ready 하면 기본 무기를 쓴다.
   const armed = s.players[slot].weapon ? s : setWeapon(s, slot, defaultWeapon(slot, s.matchId), `Player ${slot}`)
-  const next = setReady(armed, slot, now)
+  // AI 대전: 사람이 준비되면 봇도 같이 준비된다.
+  const next = armBot(setReady(armed, slot, now), now)
   await ctx.commit(next)
   if (next.phase === 'ROUND_INPUT') await announceRoundStarted(ctx, now)
   ctx.broadcastSnapshot()
+  if (next.phase === 'ROUND_INPUT') await submitBotAction(ctx)
 }
 
 export const handleRematch = async (ctx: RoomCtx, slot: PlayerSlot, matchId: string, now: number): Promise<void> => {
   const s = ctx.getState()
   if (s.phase !== 'FINISHED' || matchId !== s.matchId) { ctx.sendTo(slot, errorMessage('NOT_FINISHED', 'rematch only after finish')); return }
-  const votes = Array.from(new Set([...ctx.getRematchVotes(), slot]))
+  const votes = Array.from(new Set([...ctx.getRematchVotes(), slot, ...(s.botSlot ? [s.botSlot] : [])]))
   if (votes.length < SLOTS.length) {
     await ctx.setRematchVotes(votes)
     return
   }
-  const fresh = SLOTS.reduce((acc, p) => setConnected(acc, p, s.players[p].connected), createMatch(s.roomCode, crypto.randomUUID(), now))
+  const fresh = SLOTS.reduce((acc, p) => setConnected(acc, p, s.players[p].connected), armBot(createMatch(s.roomCode, crypto.randomUUID(), now, s.botSlot), now))
   await ctx.setRematchVotes([])
   await ctx.resetProcessed()
   await ctx.commit(fresh)
