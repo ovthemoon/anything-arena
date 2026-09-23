@@ -107,7 +107,7 @@ const commentaryFor = async (
   const key = preparedKey(matchId, roundId, attack.actor)
   const usable = (p: PreparedCommentary | null | undefined): p is PreparedCommentary =>
     Boolean(p && !attack.fallbackReason && pendingActionId && p.actionId === pendingActionId)
-  let prepared = await ctx.cacheGet<PreparedCommentary>(key)
+  let prepared: PreparedCommentary | null | undefined = await ctx.cacheGet<PreparedCommentary>(key)
   const pending = inFlight.get(key)
   if (!usable(prepared) && pending) {
     prepared = await withTimeout(pending, INFLIGHT_WAIT_MS).catch(() => null)
