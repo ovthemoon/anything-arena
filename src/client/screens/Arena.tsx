@@ -163,7 +163,8 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   const isPlayingOut = held !== null && !playback.done
   const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || (isPlayingOut && phase === 'FINISHED')
   const isFinished = (phase === 'FINISHED' && !isPlayingOut) || phase === 'CLOSED'
-  const sfx = useSfx({ state, playback, muted: !prefs.soundOn, you, isBattle, isFinished })
+  const isLobby = match !== null && !isBattle && !isFinished
+  const sfx = useSfx({ state, playback, muted: !prefs.soundOn, you, isLobby, isBattle, isFinished })
   const foul = useFoulOverlay(state, sfx)
 
   if (joinError) {

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { BGM_PATH, SFX_PATHS, createSfxPlayer } from '../../../src/client/audio/sfx'
+import { BGM_PATHS, BGM_VOLUME, SFX_PATHS, SFX_VOLUME, createSfxPlayer } from '../../../src/client/audio/sfx'
 
 const makeDeps = () => {
   const stop = vi.fn()
@@ -23,23 +23,23 @@ describe('SfxPlayer', () => {
     const sfx = createSfxPlayer({ play })
     sfx.setMuted(true)
     sfx.play('miss')
-    sfx.startBgm()
+    sfx.startBgm('battle')
     expect(play).not.toHaveBeenCalled()
   })
 
   test('startBgm loops the battle track once, even if called twice', () => {
     const { play } = makeDeps()
     const sfx = createSfxPlayer({ play })
-    sfx.startBgm()
-    sfx.startBgm()
+    sfx.startBgm('battle')
+    sfx.startBgm('battle')
     expect(play).toHaveBeenCalledTimes(1)
-    expect(play).toHaveBeenCalledWith(BGM_PATH, { loop: true, volume: expect.any(Number) })
+    expect(play).toHaveBeenCalledWith(BGM_PATHS.battle, { loop: true, volume: BGM_VOLUME })
   })
 
   test('stopBgm stops the running track', () => {
     const { play, stop } = makeDeps()
     const sfx = createSfxPlayer({ play })
-    sfx.startBgm()
+    sfx.startBgm('battle')
     sfx.stopBgm()
     expect(stop).toHaveBeenCalledTimes(1)
   })
@@ -47,7 +47,7 @@ describe('SfxPlayer', () => {
   test('muting stops bgm and unmuting resumes it while still wanted', () => {
     const { play, stop } = makeDeps()
     const sfx = createSfxPlayer({ play })
-    sfx.startBgm()
+    sfx.startBgm('battle')
     sfx.setMuted(true)
     expect(stop).toHaveBeenCalledTimes(1)
     sfx.setMuted(false)
@@ -57,11 +57,37 @@ describe('SfxPlayer', () => {
   test('unmuting after stopBgm does not restart the track', () => {
     const { play } = makeDeps()
     const sfx = createSfxPlayer({ play })
-    sfx.startBgm()
+    sfx.startBgm('battle')
     sfx.setMuted(true)
     sfx.stopBgm()
     sfx.setMuted(false)
     expect(play).toHaveBeenCalledTimes(1)
+  })
+
+  test('switching track stops the old one and starts the new one', () => {
+    const { play, stop } = makeDeps()
+    const sfx = createSfxPlayer({ play })
+    sfx.startBgm('lobby')
+    sfx.startBgm('battle')
+    expect(stop).toHaveBeenCalledTimes(1)
+    expect(play).toHaveBeenNthCalledWith(1, BGM_PATHS.lobby, { loop: true, volume: BGM_VOLUME })
+    expect(play).toHaveBeenNthCalledWith(2, BGM_PATHS.battle, { loop: true, volume: BGM_VOLUME })
+  })
+
+  test('unmuting resumes the most recently wanted track', () => {
+    const { play } = makeDeps()
+    const sfx = createSfxPlayer({ play })
+    sfx.setMuted(true)
+    sfx.startBgm('battle')
+    sfx.startBgm('lobby')
+    sfx.setMuted(false)
+    expect(play).toHaveBeenCalledTimes(1)
+    expect(play).toHaveBeenCalledWith(BGM_PATHS.lobby, { loop: true, volume: BGM_VOLUME })
+  })
+
+  test('background music sits well under the effects', () => {
+    expect(BGM_VOLUME).toBeLessThanOrEqual(0.2)
+    expect(BGM_VOLUME).toBeLessThan(SFX_VOLUME)
   })
 
   test('a throwing play dep never escapes', () => {
@@ -70,6 +96,6 @@ describe('SfxPlayer', () => {
     })
     const sfx = createSfxPlayer({ play })
     expect(() => sfx.play('win')).not.toThrow()
-    expect(() => sfx.startBgm()).not.toThrow()
+    expect(() => sfx.startBgm('battle')).not.toThrow()
   })
 })
