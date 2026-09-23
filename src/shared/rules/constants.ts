@@ -12,3 +12,10 @@ export const RULES = {
   RECONNECT_GRACE_MS: 30_000,
   IDLE_ROOM_TTL_MS: 600_000,
 } as const
+
+/** 미입력·판정 실패 시 코드가 정의한 안전한 대체 행동 (PRD 4.3). 피해 30. */
+export const DEFAULT_ATTACK = {
+  label: '기본 공격',
+  actionText: '무기를 힘껏 휘두른다',
+  animation: 'DASH',
+} as const
