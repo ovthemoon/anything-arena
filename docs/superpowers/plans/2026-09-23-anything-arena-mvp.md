@@ -10,7 +10,16 @@
 
 **Tech Stack:** React 19 + Vite 8, Cloudflare Workers + Durable Objects(SQLite) + R2, zod 4, vitest, OpenRouter (텍스트·이미지·TTS), TypeSafe Jev (판정).
 
-**Spec:** `docs/PRD_v0.1.md` (모듈 경계 = 부록 B, 설정값 = 부록 C, 내부 타입 = 부록 A)
+**Spec:** `docs/PRD_v0.1.md` (모듈 경계 = 부록 B, 설정값 = 부록 C, 내부 타입 = 부록 A) + **`docs/PRD_v0.2_addendum.md` (플레이 방식 확정, 우선)**
+
+## v0.2 반영 요약 (2026-09-23, 레인 진행 중 적용)
+
+- **세 번째 역할 SCREEN**: 컴퓨터 중계 화면. 좌석 없음, 공격 불가, 모든 방송 수신, 여러 대 가능. `ConnectionRole`, `room_snapshot.you`, `screenConnected`.
+- **방 생성은 컴퓨터**: `POST /api/rooms` → SCREEN 토큰 + `{ roomCode, joinUrl }`. 휴대폰은 `POST /api/rooms/:code/join` 으로 A→B 배정, 같은 쿠키면 같은 좌석(새로고침 복귀).
+- **캐릭터 = 사람 + 무기**: `WeaponInput.character`, `WeaponProfile.characterName`, `PRESET_CHARACTERS` 추천 4종. 프롬프트는 성격 → 기술.
+- **화면 분리**: `/screen/:code` (입력 없음, 소리 기본 ON), `/play/:code` (세로, 입력, 소리 기본 OFF). Lane B 의 DebugArena 는 `state.you` 로 분기.
+- **소리는 컴퓨터에서만** 기본 재생.
+- Lane A/B/C 에이전트에게 위 변경을 실행 중 전달함. 아래 Lane 본문은 v0.1 기준이며 충돌 시 이 요약이 우선.
 
 ## Global Constraints
 
