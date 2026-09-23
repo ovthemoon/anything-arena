@@ -89,6 +89,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
   const isPlaying = resolved !== null && !playback.done
   const isInputOpen = match.phase === 'ROUND_INPUT' && !isPlaying
   const me = you ? match.players[you] : undefined
+  const opponent = you ? match.players[you === 'A' ? 'B' : 'A'] : undefined
 
   const commentaryText = attack ? state.commentary[attack.eventId]?.text ?? null : null
   const showSubtitle = !!commentaryText && (playback.step === 'commentary' || playback.done)
@@ -121,6 +122,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
                 phase={weaponPhaseFor(playback.step, isActor, playback.done)}
                 animation={attack && isActor ? attack.animation : 'DASH'}
                 isMiss={isActor && outcome === 'MISS'}
+                text={isActor && attack ? attack.approvedActionText || attack.techniqueLabel : null}
                 travelMs={travelMs}
                 stageWidth={stageWidth}
               />
@@ -139,6 +141,7 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
       {you && (
         <ActionPanel
           me={me}
+          opponentWeakness={opponent?.weapon?.weakness ?? null}
           isInputOpen={isInputOpen}
           isCollapsed={isPlaying}
           commentaryText={null}

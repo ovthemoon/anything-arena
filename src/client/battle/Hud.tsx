@@ -48,7 +48,7 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
             <span className={`card${fouls >= 1 ? ' is-on' : ''}`} />
             <span className={`card${fouls >= 2 ? ' is-on' : ''}`} />
           </span>
-          {player?.weapon?.displayName && <span className="hud__weapon">· {player.weapon.displayName}</span>}
+          {player?.weapon?.displayName && player.weapon.displayName !== player.weapon.characterName && <span className="hud__weapon">· {player.weapon.displayName}</span>}
         </div>
         <div className="hud__tag">{tagline}</div>
       </div>

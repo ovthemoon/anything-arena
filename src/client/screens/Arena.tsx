@@ -7,6 +7,8 @@ import type { ClientState } from '../state/match-reducer'
 import { characterIdFor, type CharacterId } from '../battle/characters'
 import { usePlayback } from '../battle/usePlayback'
 import { usePrefs } from '../battle/usePrefs'
+import { useSfx } from '../audio/useSfx'
+import type { SfxPlayer } from '../audio/sfx'
 import { BattleScreen } from './BattleScreen'
 import { LobbyScreen } from './LobbyScreen'
 import { ResultScreen } from './ResultScreen'
@@ -67,22 +69,13 @@ function useCommentaryAudio(state: ClientState, muted: boolean) {
   return audioManager
 }
 
-const playCue = (path: string, muted: boolean) => {
-  if (muted) return
-  try {
-    void new Audio(path).play().catch(() => undefined)
-  } catch {
-    /* 파일이 없거나 자동재생 차단: 조용히 무시 */
-  }
-}
-
 interface FoulOverlayState {
   slot: PlayerSlot
   fouls: number
 }
 
 /** 양쪽 fouls 가 오르면 카드 오버레이 + 호루라기. 원문은 절대 표시하지 않는다. */
-function useFoulOverlay(state: ClientState, muted: boolean): FoulOverlayState | null {
+function useFoulOverlay(state: ClientState, sfx: SfxPlayer): FoulOverlayState | null {
   const prev = useRef<Record<PlayerSlot, number>>({ A: 0, B: 0 })
   const [overlay, setOverlay] = useState<FoulOverlayState | null>(null)
   useEffect(() => {
@@ -93,13 +86,13 @@ function useFoulOverlay(state: ClientState, muted: boolean): FoulOverlayState | 
       if (fouls > prev.current[slot]) {
         prev.current = { ...prev.current, [slot]: fouls }
         setOverlay({ slot, fouls })
-        playCue('/audio/whistle.mp3', muted)
+        sfx.play('whistle')
         const t = window.setTimeout(() => setOverlay(null), FOUL_OVERLAY_MS)
         return () => window.clearTimeout(t)
       }
       if (fouls < prev.current[slot]) prev.current = { ...prev.current, [slot]: fouls }
     }
-  }, [state.match?.players, muted])
+  }, [state.match?.players, sfx])
   return overlay
 }
 
@@ -137,7 +130,6 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   const { state, send } = useMatch(joined ? roomCode : null)
   const prefs = usePrefs(!autoJoin)
   useCommentaryAudio(state, !prefs.soundOn)
-  const foul = useFoulOverlay(state, !prefs.soundOn)
   const seconds = useCountdownSeconds(state.match?.deadlineAt)
   // round_started 가 오면 리듀서가 playback 을 지우지만, 재생이 끝날 때까지는 마지막 round_resolved 를 붙잡는다.
   const [held, setHeld] = useState<RoundResolved | null>(null)
@@ -162,6 +154,13 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
     B: match?.players.B ? (you === 'B' && myPick ? myPick : characterIdFor(match.players.B, 'B')) : null,
   }
 
+  const phase = match?.phase ?? null
+  const isPlayingOut = held !== null && !playback.done
+  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || (isPlayingOut && phase === 'FINISHED')
+  const isFinished = (phase === 'FINISHED' && !isPlayingOut) || phase === 'CLOSED'
+  const sfx = useSfx({ state, playback, muted: !prefs.soundOn, you, isBattle, isFinished })
+  const foul = useFoulOverlay(state, sfx)
+
   if (joinError) {
     return (
       <main className="screen">
@@ -172,11 +171,6 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
       </main>
     )
   }
-
-  const phase = match?.phase ?? null
-  const isPlayingOut = held !== null && !playback.done
-  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || (isPlayingOut && phase === 'FINISHED')
-  const isFinished = (phase === 'FINISHED' && !isPlayingOut) || phase === 'CLOSED'
 
   return (
     <div ref={stageRef} className="arena" style={{ position: 'relative' }}>
