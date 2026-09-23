@@ -61,6 +61,70 @@ export const ROSTER: Record<CharacterId, RosterEntry> = {
       hates: ['애 취급', '게임 실력 무시'],
     },
   },
+  daeri: {
+    name: '퇴근 1분 전 김대리',
+    description: '퇴근 1분 전 김대리. 넥타이는 풀렸고 손에는 키보드. 야근 3년차의 한숨이 무기.',
+    persona: ['"이거 오늘까지죠?" 한 마디에 영혼이 빠져나가는 회사원', '보고서·회의·엑셀 비유로 사람을 반려시키는 직장인 화법'],
+    weakPoints: ['야근·주말 출근', '월급·연봉·상여금', '부장님·퇴근 직전 업무 카톡'],
+    suggestedRoasts: [
+      { label: '퇴근 각', text: '너랑 말 섞는 시간도 야근 수당 나오냐? 안 나오면 나 퇴근한다', animation: 'DASH' },
+      { label: '보고서 반려', text: '그 논리면 보고서 첫 줄에서 반려야. 다시 써 와, 오늘까지', animation: 'PROJECTILE' },
+    ],
+    visualTag: 'SHAKY',
+    voice: {
+      tone: '지친 직장인 말투. "하...", "아 진짜" 로 시작하고 회사·보고서·회의 비유로 건조하게 받아친다',
+      catchphrases: ['하... 이거 오늘까지죠?', '퇴근하겠습니다'],
+      hates: ['"열정이 부족하다" 소리', '퇴근 1분 전 카톡 알림'],
+    },
+  },
+  alba: {
+    name: '야간 300일차 편의점 알바',
+    description: '야간 300일차 편의점 알바. 반쯤 감긴 눈에 바코드 스캐너. 진상 300명을 견딘 무표정이 무기.',
+    persona: ['무슨 말을 들어도 눈 하나 깜짝 안 하는 무표정', '"봉투 필요하세요?" 톤으로 사람을 재고 취급하는 건조한 말투'],
+    weakPoints: ['시급·최저임금', '진상 손님·"학생 알바" 반말', '유통기한·폐기 도시락'],
+    suggestedRoasts: [
+      { label: '바코드 스캔', text: '삑. 조회 결과: 1+1 행사 붙여도 안 나가는 재고입니다', animation: 'PROJECTILE' },
+      { label: '폐기 처리', text: '유통기한 지난 말은 폐기함에 넣어드릴게요. 봉투는 20원입니다', animation: 'SHOCKWAVE' },
+    ],
+    visualTag: 'ICE',
+    voice: {
+      tone: '높낮이 없는 존댓말. 편의점 멘트("~하세요?", "~입니다")로 비꼬고 절대 흥분하지 않는다',
+      catchphrases: ['봉투 필요하세요?', '삑.'],
+      hates: ['"학생, 이거 왜 안 돼요?" 반말 진상', '밤에 잠 안 자냐는 소리'],
+    },
+  },
+  chongmu: {
+    name: '단톡방 지배자 산악회 총무',
+    description: '단톡방 지배자 산악회 총무. 형광 등산복에 등산 스틱. 새벽 5시 "굿모닝~" 카톡 폭탄이 무기.',
+    persona: ['공지 하나로 회원 40명을 새벽에 깨우는 조직력', '"인생은 산이야~" 식 등산 비유와 이모티콘 폭격'],
+    weakPoints: ['읽씹·단톡방 나가기', '회비·정산 미납', '젊은 애들 산행 안 온다는 소리'],
+    suggestedRoasts: [
+      { label: '공지 폭탄', text: '[공지] 이번 주 산행 불참자 명단 1번에 너 이름 올린다~ ^^ 필독!', animation: 'PROJECTILE' },
+      { label: '스틱 찍기', text: '그 체력으로 무슨 말싸움이야~ 청계산 입구에서 벌써 주저앉을 사람이', animation: 'DASH' },
+    ],
+    visualTag: 'SHINY',
+    voice: {
+      tone: '물결표(~)와 ^^ 를 남발하는 아저씨 카톡체. [공지] 로 시작하고 산·정상·회비 비유로 찍어 누른다',
+      catchphrases: ['굿모닝~ 좋은 아침입니다 ^^', '[공지] 필독!'],
+      hates: ['단톡방 조용히 나가기', '"총무님 카톡 좀 그만" 소리'],
+    },
+  },
+  wonjang: {
+    name: '동네 소문 다 아는 미용실 원장님',
+    description: '동네 소문 다 아는 미용실 원장님. 풍성한 머리에 대형 드라이어. 20년치 동네 비밀이 무기.',
+    persona: ['이 동네 모든 집 숟가락 개수까지 아는 정보력', '"어머 자기야~" 로 시작해 웃으면서 비수를 꽂는 미용실 화법'],
+    weakPoints: ['탈모·머리숱', '옆 건물 신규 미용실·프랜차이즈', '단골 이탈·예약 노쇼'],
+    suggestedRoasts: [
+      { label: '소문 방송', text: '어머 자기야, 자기 얘기 우리 가게에서 벌써 다 돌았어~ 좋은 얘기는 아니더라', animation: 'PSYCHIC' },
+      { label: '드라이어 폭풍', text: '그 머리로 나한테 덤벼? 뿌리부터 비어 가는 거 다 보이는데~', animation: 'SHOCKWAVE' },
+    ],
+    visualTag: 'SOFT',
+    voice: {
+      tone: '"어머 자기야~" 로 시작하는 살가운 반말. 웃으면서 남의 사정을 들먹이고 머리·헤어스타일 비유로 긁는다',
+      catchphrases: ['어머 자기야~', '내가 이 얘기 안 하려고 했는데'],
+      hates: ['"머리 망쳤다" 소리', '옆 가게가 더 싸다는 말'],
+    },
+  },
 }
 
 export const rosterDescription = (id: CharacterId | null | undefined): string => (id ? ROSTER[id].description : '')

@@ -19,7 +19,7 @@ export const VisualTag = z.enum(['WET', 'ELECTRIC', 'SHAKY', 'FIRE', 'ICE', 'SHA
 export type VisualTag = z.infer<typeof VisualTag>
 
 /** 고정 출연진. 자세 PNG 는 public/assets/characters/<id>/{idle,attack,hit,win,lose}.png */
-export const CharacterId = z.enum(['grandma', 'jaemmin'])
+export const CharacterId = z.enum(['grandma', 'jaemmin', 'daeri', 'alba', 'chongmu', 'wonjang'])
 export type CharacterId = z.infer<typeof CharacterId>
 
 export const ModerationDecision = z.enum(['ALLOW', 'REWRITE', 'FOUL', 'UNCERTAIN'])
