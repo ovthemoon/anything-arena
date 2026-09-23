@@ -11,6 +11,7 @@ import { WeaponSprite, type WeaponPhase } from '../battle/WeaponSprite'
 import { displayedHp } from '../battle/hp-display'
 import { outcomeFx, outcomeOf, weaponImageUrlOf } from '../battle/outcome'
 import { STEP_MS, type StepKind } from '../battle/timeline'
+import { FROZEN_ACTION } from '../../shared/rules/constants'
 import type { PlaybackState } from '../battle/usePlayback'
 import type { Pose, CharacterId } from '../battle/characters'
 import type { Prefs } from '../battle/usePrefs'
@@ -31,6 +32,10 @@ export interface BattleScreenProps {
 const sideOf = (slot: PlayerSlot): 'left' | 'right' => (slot === 'A' ? 'left' : 'right')
 
 const ACTOR_ATTACK_STEPS: readonly StepKind[] = ['windup', 'travel', 'freeze', 'result']
+
+/** 시간 초과로 아무 말도 못 한 공격. 공격 자세 없이 말풍선만 제자리에서 떤다. */
+const isFrozenAttack = (attack: AttackEvent | null): boolean => attack?.techniqueLabel === FROZEN_ACTION.label
+const FROZEN_LABEL = '얼어붙음!'
 
 const weaponPhaseFor = (step: StepKind | null, isActor: boolean, done: boolean): WeaponPhase => {
   if (!isActor || step === null) return done ? 'float' : 'float'
@@ -62,6 +67,7 @@ const visualFor = (slot: PlayerSlot, pb: PlaybackState, attack: AttackEvent | nu
   if (!attack || pb.step === null) return base
   const fx = outcomeFx(outcomeOf(attack))
   if (attack.actor === slot) {
+    if (isFrozenAttack(attack)) return base
     return {
       ...base,
       pose: ACTOR_ATTACK_STEPS.includes(pb.step) ? 'attack' : 'idle',
@@ -81,7 +87,8 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
 
   const attack = playback.attack
   const outcome = attack ? outcomeOf(attack) : 'NORMAL'
-  const fx = outcomeFx(outcome)
+  const frozen = isFrozenAttack(attack)
+  const fx = frozen ? { ...outcomeFx('MISS'), label: FROZEN_LABEL, targetShift: { x: 0, y: 0 } } : outcomeFx(outcome)
   const isResult = playback.step === 'result' && !!attack
   const isShaking = isResult && prefs.shakeOn && fx.shakePx > 0 && !prefs.reducedMotion
   const travelMs = prefs.reducedMotion ? 200 : STEP_MS.travel
@@ -121,7 +128,8 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
                 side={sideOf(slot)}
                 phase={weaponPhaseFor(playback.step, isActor, playback.done)}
                 animation={attack && isActor ? attack.animation : 'DASH'}
-                isMiss={isActor && outcome === 'MISS'}
+                isMiss={isActor && outcome === 'MISS' && !frozen}
+                isStatic={isActor && frozen}
                 text={isActor && attack ? attack.approvedActionText || attack.techniqueLabel : null}
                 travelMs={travelMs}
                 stageWidth={stageWidth}

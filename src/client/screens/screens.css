@@ -40,7 +40,7 @@
 .subtitle.is-raised { bottom: 30%; }
 
 /* 결과 */
-.result__banner { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 7; text-align: center; }
+.result__banner { position: absolute; left: 50%; top: 31%; transform: translateX(-50%); z-index: 7; text-align: center; }
 .result__title { font-size: clamp(32px, 8vw, 96px); font-weight: 900; color: #ffe259; text-shadow: 4px 4px 0 #000; line-height: 1; animation: pop 600ms cubic-bezier(.2,1.6,.4,1) 1; }
-.result__sub { margin-top: .4em; font-size: clamp(14px, 2vw, 24px); text-shadow: 2px 2px 0 #000; }
+.result__sub { margin-top: .4em; background: rgba(10,8,18,.75); border-radius: 8px; padding: .2em .6em; display: inline-block; font-size: clamp(14px, 2vw, 24px); text-shadow: 2px 2px 0 #000; }
 .result__panel { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7; background: rgba(10,8,18,.92); border: 2px solid #fff; border-radius: 14px; padding: .8em 1.2em; display: grid; gap: .5em; text-align: center; width: min(520px, 92%); }
