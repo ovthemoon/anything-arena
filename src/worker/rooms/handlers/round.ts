@@ -4,8 +4,9 @@ import type { WeaponProfile } from '../../../shared/schemas/weapon'
 import type { PlayerSlot } from '../../../shared/schemas/enums'
 import { resolveRound, startRound, toPublic } from '../../game/engine'
 import { type RoomCtx, withTimeout } from '../room-context'
+import { submitBotAction } from './bot'
 
-const PLAYBACK_DELAY_MS = 6_500 // 공격 1회 연출 ≈3초 × 2 (연출 설계 §3). 입력 15초를 연출이 잡아먹지 않게 서버가 기다린다.
+const PLAYBACK_DELAY_MS = 14_000 // 공격 1회 연출 ≈6.6초 × 2 (timeline.ts STEP_MS 합계). 입력 15초를 연출이 잡아먹지 않게 서버가 기다린다.
 const COMMENTARY_VALID_MS = 6_000
 const COMMENTARY_TIMEOUT_MS = 5_000
 const TTS_TIMEOUT_MS = 8_000
@@ -16,6 +17,7 @@ export const beginRound = async (ctx: RoomCtx, now: number): Promise<void> => {
   await ctx.setAlarm((next.deadlineAt ?? now) + RULES.JUDGE_GRACE_MS)
   ctx.broadcast({ type: 'round_started', matchId: next.matchId, roundId: next.roundId, deadlineAt: next.deadlineAt ?? now })
   ctx.broadcastSnapshot()
+  await submitBotAction(ctx)
 }
 
 /** 라운드 시작 알림 (setReady 가 이미 ROUND_INPUT 으로 바꾼 경우). */
