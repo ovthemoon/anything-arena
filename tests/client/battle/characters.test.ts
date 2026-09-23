@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { existsSync } from 'node:fs'
 import { ROSTER, characterIdFor, poseUrl } from '../../../src/client/battle/characters'
 
 describe('roster', () => {
@@ -7,6 +8,14 @@ describe('roster', () => {
     expect(poseUrl('grandma', 'idle')).toBe('/assets/characters/grandma/idle.png')
     expect(poseUrl('jaemmin', 'win')).toBe('/assets/characters/jaemmin/win.png')
     expect(poseUrl('wonjang', 'attack')).toBe('/assets/characters/wonjang/attack.png')
+  })
+
+  test('every selectable character has an existing image for every pose', () => {
+    for (const character of ROSTER) {
+      for (const pose of ['idle', 'attack', 'hit', 'win', 'lose'] as const) {
+        expect(existsSync(`public${poseUrl(character.id, pose)}`)).toBe(true)
+      }
+    }
   })
 
   test('characterIdFor prefers player.characterId when it is in the roster', () => {

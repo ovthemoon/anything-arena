@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" fill="none">
+  <title>캐릭터 임시 실루엣</title>
+  <g fill="#6b6887" stroke="#d4cde8" stroke-width="12" stroke-linejoin="round">
+    <circle cx="400" cy="195" r="100"/>
+    <path d="M315 310h170c40 0 72 27 84 65l55 177-63 23-57-140-13 138 37 164H420l-20-138-20 138H272l37-164-13-138-57 140-63-23 55-177c12-38 44-65 84-65Z"/>
+  </g>
+</svg>
