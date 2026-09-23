@@ -94,7 +94,7 @@
 .weapon.is-frozen { animation-play-state: paused; }
 
 /* 말풍선 (긁기 배틀: 한 마디가 무기) */
-.weapon--bubble { height: auto; width: 34%; aspect-ratio: auto; bottom: 58%; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.weapon.weapon--bubble { height: auto; width: 34%; aspect-ratio: auto; bottom: 58%; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
 .bubble {
   position: relative; background: #fff; color: #111; border: 3px solid #111; border-radius: 16px;
   padding: .45em .8em; font-weight: 900; font-size: clamp(13px, 1.7vw, 22px); line-height: 1.25;
@@ -104,7 +104,7 @@
 .bubble--left::after  { left: 18%; }
 .bubble--right::after { right: 18%; }
 @media (orientation: portrait) {
-  .weapon--bubble { width: 72%; bottom: 66%; }
+  .weapon.weapon--bubble { width: 72%; height: auto; bottom: 66%; }
   .weapon--bubble.weapon--left { left: 4%; }
   .weapon--bubble.weapon--right { right: 4%; }
   .bubble { font-size: 14px; word-break: normal; overflow-wrap: break-word; }
