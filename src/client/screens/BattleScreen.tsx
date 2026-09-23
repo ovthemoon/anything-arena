@@ -7,10 +7,12 @@ import { ActionPanel } from '../battle/ActionPanel'
 import { CharacterSprite } from '../battle/CharacterSprite'
 import { Fx } from '../battle/Fx'
 import { Hud } from '../battle/Hud'
+import { Impact } from '../battle/Impact'
+import { RoundBanner, useRoundBanner } from '../battle/RoundBanner'
 import { WeaponSprite, type WeaponPhase } from '../battle/WeaponSprite'
 import { displayedHp } from '../battle/hp-display'
 import { outcomeFx, outcomeOf, weaponImageUrlOf } from '../battle/outcome'
-import { STEP_MS, type StepKind } from '../battle/timeline'
+import { STEP_MS, buildAttackTimeline, type StepKind } from '../battle/timeline'
 import type { PlaybackState } from '../battle/usePlayback'
 import type { Pose, CharacterId } from '../battle/characters'
 import type { Prefs } from '../battle/usePrefs'
@@ -31,6 +33,9 @@ export interface BattleScreenProps {
 const sideOf = (slot: PlayerSlot): 'left' | 'right' => (slot === 'A' ? 'left' : 'right')
 
 const ACTOR_ATTACK_STEPS: readonly StepKind[] = ['windup', 'travel', 'freeze', 'result']
+
+/** 카메라 펀치(줌인) 배율. 맞은 쪽으로 화면이 잠깐 다가갔다 돌아온다. */
+const CAMERA_ZOOM: Record<'STRONG' | 'NORMAL' | 'LIMITED' | 'MISS', number> = { STRONG: 1.1, NORMAL: 1.06, LIMITED: 1.02, MISS: 1 }
 
 const weaponPhaseFor = (step: StepKind | null, isActor: boolean, done: boolean): WeaponPhase => {
   if (!isActor || step === null) return done ? 'float' : 'float'
@@ -74,20 +79,26 @@ const visualFor = (slot: PlayerSlot, pb: PlaybackState, attack: AttackEvent | nu
   return base
 }
 
+const travelMsFor = (pb: PlaybackState, reducedMotion: boolean): number =>
+  buildAttackTimeline(reducedMotion, { isFinishing: pb.isFinishing }).find((s) => s.kind === 'travel')?.ms ?? STEP_MS.travel
+
 /** 배틀 화면: 배경·캐릭터·무기·효과·HUD·(플레이어면) 입력 패널. 모든 값은 서버 상태에서 파생. */
 export function BattleScreen({ state, you, playback, resolved, seconds, characterIds, prefs, stageWidth, send }: BattleScreenProps) {
   const match = state.match
+  const isPlaying = resolved !== null && !playback.done
+  const isInputOpen = match?.phase === 'ROUND_INPUT' && !isPlaying
+  const banner = useRoundBanner(match?.roundId ?? 0, isInputOpen)
   if (!match) return null
 
   const attack = playback.attack
   const outcome = attack ? outcomeOf(attack) : 'NORMAL'
   const fx = outcomeFx(outcome)
   const isResult = playback.step === 'result' && !!attack
+  const isFreeze = playback.step === 'freeze' && !!attack && !prefs.reducedMotion
   const isShaking = isResult && prefs.shakeOn && fx.shakePx > 0 && !prefs.reducedMotion
-  const travelMs = prefs.reducedMotion ? 200 : STEP_MS.travel
-
-  const isPlaying = resolved !== null && !playback.done
-  const isInputOpen = match.phase === 'ROUND_INPUT' && !isPlaying
+  const isPunching = isResult && !prefs.reducedMotion && CAMERA_ZOOM[outcome] > 1
+  const isDashing = !!attack && attack.animation === 'DASH' && playback.step === 'travel' && outcome !== 'MISS' && !prefs.reducedMotion
+  const travelMs = travelMsFor(playback, prefs.reducedMotion)
   const me = you ? match.players[you] : undefined
 
   const commentaryText = attack ? state.commentary[attack.eventId]?.text ?? null : null
@@ -100,37 +111,56 @@ export function BattleScreen({ state, you, playback, resolved, seconds, characte
     B: match.players.B ? { ...match.players.B, hp: displayedHp(playback, resolved, 'B', match.players.B.hp) } : undefined,
   }
 
-  const arenaStyle = { ['--shake-px' as string]: `${fx.shakePx}px`, ['--shake-ms' as string]: `${fx.shakeMs}ms` }
+  const targetSide = attack ? sideOf(attack.target) : 'right'
+  const stageCls = ['stage', `stage--focus-${targetSide}`]
+  if (isShaking) stageCls.push('is-shaking')
+  if (isPunching) stageCls.push('is-punching')
+  if (isFreeze) stageCls.push('is-hitstop')
+  const stageStyle = {
+    ['--shake-px' as string]: `${fx.shakePx}px`,
+    ['--shake-ms' as string]: `${fx.shakeMs}ms`,
+    ['--zoom' as string]: String(CAMERA_ZOOM[outcome]),
+  }
 
   return (
-    <div className={`arena${isShaking ? ' is-shaking' : ''}`} style={arenaStyle}>
-      <div className="arena__floor" />
+    <div className="arena">
+      <div className={stageCls.join(' ')} style={stageStyle}>
+        <div className="arena__floor" />
+        {isDashing && <div className={`speedlines speedlines--${sideOf(attack.actor)}`} style={{ ['--travel-ms' as string]: `${travelMs}ms` }} />}
 
-      {(['A', 'B'] as const).map((slot) => {
-        const player = match.players[slot]
-        const v = visualFor(slot, playback, attack)
-        const isActor = attack?.actor === slot
-        return (
-          <div key={slot} style={{ display: 'contents' }}>
-            <CharacterSprite id={characterIds[slot]} pose={v.pose} side={sideOf(slot)} shiftX={v.shiftX} isLunging={v.isLunging} isFlashing={v.isFlashing} />
-            {player?.weapon && (
-              <WeaponSprite
-                imageUrl={weaponImageUrlOf(player.weapon)}
-                visualTag={player.weapon.visualTag}
-                side={sideOf(slot)}
-                phase={weaponPhaseFor(playback.step, isActor, playback.done)}
-                animation={attack && isActor ? attack.animation : 'DASH'}
-                isMiss={isActor && outcome === 'MISS'}
-                travelMs={travelMs}
-                stageWidth={stageWidth}
-              />
-            )}
-          </div>
-        )
-      })}
+        {(['A', 'B'] as const).map((slot) => {
+          const player = match.players[slot]
+          const v = visualFor(slot, playback, attack)
+          const isActor = attack?.actor === slot
+          return (
+            <div key={slot} style={{ display: 'contents' }}>
+              <CharacterSprite id={characterIds[slot]} pose={v.pose} side={sideOf(slot)} shiftX={v.shiftX} isLunging={v.isLunging} isFlashing={v.isFlashing} />
+              {player?.weapon && (
+                <WeaponSprite
+                  imageUrl={weaponImageUrlOf(player.weapon)}
+                  visualTag={player.weapon.visualTag}
+                  side={sideOf(slot)}
+                  phase={weaponPhaseFor(playback.step, isActor, playback.done)}
+                  animation={attack && isActor ? attack.animation : 'DASH'}
+                  isMiss={isActor && outcome === 'MISS'}
+                  travelMs={travelMs}
+                  stageWidth={stageWidth}
+                />
+              )}
+            </div>
+          )
+        })}
+
+        {attack && isResult && (
+          <Impact outcome={outcome} targetSide={targetSide} seed={(resolved?.eventSeq ?? 0) * 2 + (playback.index ?? 0)} reducedMotion={prefs.reducedMotion} />
+        )}
+        {attack && isResult && (
+          <Fx kind="result" text={fx.label} outcome={outcome} damage={attack.damage} targetSide={targetSide} showDamage={fx.showDamage} isFinishing={playback.isFinishing} />
+        )}
+      </div>
 
       {attack && playback.step === 'name' && <Fx kind="name" text={attack.techniqueLabel} />}
-      {attack && isResult && <Fx kind="result" text={fx.label} outcome={outcome} damage={attack.damage} targetSide={sideOf(attack.target)} showDamage={fx.showDamage} />}
+      <RoundBanner stage={isPlaying ? null : banner} roundId={match.roundId} />
 
       <Hud players={playersForHud} characterIds={characterIds} roundId={isPlaying && resolved ? resolved.roundId : match.roundId} seconds={isInputOpen ? seconds : null} />
 

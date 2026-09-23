@@ -7,6 +7,9 @@ import type { ClientState } from '../state/match-reducer'
 import { characterIdFor, type CharacterId } from '../battle/characters'
 import { usePlayback } from '../battle/usePlayback'
 import { usePrefs } from '../battle/usePrefs'
+import { matchEndKind } from '../battle/finishing'
+import { matchEndStage } from '../battle/match-end'
+import { KoCutIn } from '../battle/KoCutIn'
 import { BattleScreen } from './BattleScreen'
 import { LobbyScreen } from './LobbyScreen'
 import { ResultScreen } from './ResultScreen'
@@ -21,6 +24,7 @@ export interface ArenaProps {
 }
 
 const FOUL_OVERLAY_MS = 2600
+const KO_CUTIN_MS = 1600
 const FOUL_TEXT = '삐익! 인신공격 반칙입니다. 무기로 승부하세요.'
 const FOUL_LOCK_TEXT = '자유 입력이 잠겼습니다. 이번 경기는 기본 공격으로 진행됩니다.'
 
@@ -162,6 +166,20 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
     B: match?.players.B ? (you === 'B' && myPick ? myPick : characterIdFor(match.players.B, 'B')) : null,
   }
 
+  // 경기 종료: 마지막 재생 → KO 컷인 → 결과 화면
+  const phase = match?.phase ?? null
+  const isPlayingOut = held !== null && !playback.done
+  const [koDone, setKoDone] = useState(false)
+  const endStage = matchEndStage({ phase, isPlayingOut, koDone })
+  useEffect(() => {
+    if (endStage !== 'ko') return
+    const t = window.setTimeout(() => setKoDone(true), KO_CUTIN_MS)
+    return () => window.clearTimeout(t)
+  }, [endStage])
+  useEffect(() => {
+    if (phase !== 'FINISHED' && phase !== 'CLOSED') setKoDone(false)
+  }, [phase])
+
   if (joinError) {
     return (
       <main className="screen">
@@ -173,10 +191,9 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
     )
   }
 
-  const phase = match?.phase ?? null
-  const isPlayingOut = held !== null && !playback.done
-  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || (isPlayingOut && phase === 'FINISHED')
-  const isFinished = (phase === 'FINISHED' && !isPlayingOut) || phase === 'CLOSED'
+  const isBattle = phase === 'ROUND_INPUT' || phase === 'ROUND_RESOLVING' || phase === 'ROUND_PLAYBACK' || endStage === 'battle' || endStage === 'ko'
+  const isFinished = endStage === 'result'
+  const koKind = matchEndKind({ A: match?.players.A?.hp, B: match?.players.B?.hp })
 
   return (
     <div ref={stageRef} className="arena" style={{ position: 'relative' }}>
@@ -190,6 +207,7 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
       )}
       {match && isBattle && <BattleScreen state={state} you={you} playback={playback} resolved={held} seconds={seconds} characterIds={characterIds} prefs={prefs} stageWidth={stageWidth} send={send} />}
       {match && isFinished && <ResultScreen state={state} you={you} characterIds={characterIds} send={send} />}
+      {endStage === 'ko' && <KoCutIn kind={koKind} />}
 
       {foul && (
         <div className="foul">

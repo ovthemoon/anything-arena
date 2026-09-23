@@ -40,7 +40,24 @@
 .subtitle.is-raised { bottom: 30%; }
 
 /* 결과 */
-.result__banner { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 7; text-align: center; }
+.result .hud__logo { display: none; }
+.result__banner { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); z-index: 7; text-align: center; display: grid; gap: .5em; justify-items: center; }
 .result__title { font-size: clamp(32px, 8vw, 96px); font-weight: 900; color: #ffe259; text-shadow: 4px 4px 0 #000; line-height: 1; animation: pop 600ms cubic-bezier(.2,1.6,.4,1) 1; }
 .result__sub { margin-top: .4em; font-size: clamp(14px, 2vw, 24px); text-shadow: 2px 2px 0 #000; }
+/* 최고의 한 방 카드: 승리 글씨 뒤에 한 박자 늦게 팝인 */
+.best { background: rgba(10,8,18,.92); border: 3px solid #ffe259; border-radius: 14px; padding: .6em 1em; min-width: min(360px, 80vw); box-shadow: 0 12px 30px rgba(0,0,0,.6); opacity: 0; animation: pop 500ms cubic-bezier(.2,1.6,.4,1) 500ms 1 forwards; }
+.best__title { font-size: clamp(11px, 1.3vw, 16px); color: #ffe259; letter-spacing: .1em; font-weight: 800; }
+.best__body { display: flex; gap: .8em; align-items: center; text-align: left; margin-top: .3em; }
+.best__weapon { width: clamp(56px, 7vw, 96px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0,0,0,.6)); }
+.best__col { display: grid; gap: .15em; }
+.best__who { font-size: clamp(11px, 1.3vw, 16px); color: #cfc8dc; }
+.best__tech { font-weight: 900; font-size: clamp(16px, 2.4vw, 30px); text-shadow: 2px 2px 0 #000; }
+.best__row { display: flex; gap: .6em; align-items: baseline; }
+.best__label { font-weight: 900; font-size: clamp(14px, 1.8vw, 22px); color: #ff5a3c; text-shadow: 2px 2px 0 #000; }
+.best__label.is-LIMITED { color: #8fd3ff; }
+.best__dmg { font-weight: 900; font-size: clamp(18px, 2.6vw, 34px); color: #ffb3a7; text-shadow: 2px 2px 0 #000; }
+/* 대기실 중계: 무기 카드가 각자 자리 위에 뒤집히며 등장 */
+.wcard--seat { position: absolute; top: 6%; width: min(30%, 340px); z-index: 5; font-size: clamp(11px, 1.3vw, 16px); }
+.wcard--seat-left { left: 3%; }
+.wcard--seat-right { right: 3%; }
 .result__panel { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 7; background: rgba(10,8,18,.92); border: 2px solid #fff; border-radius: 14px; padding: .8em 1.2em; display: grid; gap: .5em; text-align: center; width: min(520px, 92%); }

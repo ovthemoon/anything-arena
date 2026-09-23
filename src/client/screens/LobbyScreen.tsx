@@ -40,9 +40,9 @@ function useQrCode(url: string): string | null {
   return dataUrl
 }
 
-function WeaponCard({ weapon }: { weapon: WeaponProfile }) {
+function WeaponCard({ weapon, className = '' }: { weapon: WeaponProfile; className?: string }) {
   return (
-    <div className="wcard wcard--flip">
+    <div className={`wcard wcard--flip ${className}`}>
       <div className="wcard__name">{weapon.displayName}</div>
       <div>{weapon.tagline}</div>
       <div className="wcard__row">
@@ -57,14 +57,17 @@ function WeaponCard({ weapon }: { weapon: WeaponProfile }) {
   )
 }
 
-function Seat({ player, id, side, stageWidth }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right'; stageWidth: number }) {
+/** 좌석 하나: 캐릭터·무기·이름표. 무기가 도착하면 캐릭터가 튀어오르며 "입장"하고, 중계 화면엔 무기 카드가 뒤집힌다. */
+function Seat({ player, id, side, stageWidth, isScreen }: { player: PublicPlayer | undefined; id: CharacterId | null; side: 'left' | 'right'; stageWidth: number; isScreen: boolean }) {
   const label = player?.nickname ?? (player?.connected ? '무기 고르는 중' : '빈 자리')
+  const isArmed = !!player?.weapon
   return (
     <>
-      <CharacterSprite id={player?.connected ? id : null} pose="idle" side={side} />
+      <CharacterSprite key={isArmed ? 'armed' : 'bare'} id={player?.connected ? id : null} pose="idle" side={side} isEntering={isArmed} />
       {player?.weapon && (
         <WeaponSprite imageUrl={weaponImageUrlOf(player.weapon)} visualTag={player.weapon.visualTag} side={side} phase="float" animation="DASH" travelMs={0} stageWidth={stageWidth} />
       )}
+      {isScreen && player?.weapon && <WeaponCard weapon={player.weapon} className={`wcard--seat wcard--seat-${side}`} />}
       <div className={`seat-label seat-label--${side}`}>
         {label}
         {player?.ready ? ' ✓' : ''}
@@ -104,17 +107,18 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
   }
 
   const isWaitingWeapon = submitted && !me?.weapon
+  const isScreen = !you
 
   return (
     <div className="lobby" style={{ position: 'absolute', inset: 0 }}>
       <div className="lobby__seats">
-        <Seat player={match?.players.A} id={characterIds.A} side="left" stageWidth={stageWidth} />
-        <Seat player={match?.players.B} id={characterIds.B} side="right" stageWidth={stageWidth} />
+        <Seat player={match?.players.A} id={characterIds.A} side="left" stageWidth={stageWidth} isScreen={isScreen} />
+        <Seat player={match?.players.B} id={characterIds.B} side="right" stageWidth={stageWidth} isScreen={isScreen} />
         <img className="vs" src="/assets/vs.png" alt="VS" />
       </div>
 
       <div className="lobby__panel">
-        {!you && (
+        {isScreen && (
           <>
             <div className="row">
               {qr && <img className="qr" src={qr} alt="참가 QR" />}

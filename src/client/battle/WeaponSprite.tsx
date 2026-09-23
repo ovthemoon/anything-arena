@@ -20,8 +20,8 @@ const TRAVEL_RATIO = 0.52
 
 const silhouetteUrl = (tag: VisualTag | null): string => `/assets/tag-${tag ?? 'ABSTRACT'}.svg`
 
-/** 캐릭터 옆에 떠 있다가 공격 때 상대에게 날아가는 무기 그림. */
-export function WeaponSprite({ imageUrl, visualTag, side, phase, animation, isMiss = false, travelMs, stageWidth }: WeaponSpriteProps) {
+/** 생성된 무기 그림의 초록을 오려낸 주소. 그림이 없으면 태그별 실루엣. */
+export function useCutout(imageUrl: string | null, visualTag: VisualTag | null): string {
   const [src, setSrc] = useState<string>(() => imageUrl ?? silhouetteUrl(visualTag))
 
   useEffect(() => {
@@ -37,6 +37,13 @@ export function WeaponSprite({ imageUrl, visualTag, side, phase, animation, isMi
       cancelled = true
     }
   }, [imageUrl, visualTag])
+
+  return src
+}
+
+/** 캐릭터 옆에 떠 있다가 공격 때 상대에게 날아가는 무기 그림. */
+export function WeaponSprite({ imageUrl, visualTag, side, phase, animation, isMiss = false, travelMs, stageWidth }: WeaponSpriteProps) {
+  const src = useCutout(imageUrl, visualTag)
 
   const direction = side === 'left' ? 1 : -1
   const travelPx = Math.round(stageWidth * TRAVEL_RATIO) * direction

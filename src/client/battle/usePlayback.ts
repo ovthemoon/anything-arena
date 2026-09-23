@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { AttackEvent, RoundResolved } from '../../shared/schemas/match'
+import { finishingIndex } from './finishing'
 import { buildAttackTimeline, type StepKind } from './timeline'
 
 export interface PlaybackState {
@@ -8,9 +9,11 @@ export interface PlaybackState {
   attack: AttackEvent | null
   step: StepKind | null
   done: boolean
+  /** 지금 재생 중인 공격이 상대 체력을 0 으로 만드는 결정타 */
+  isFinishing: boolean
 }
 
-const IDLE: PlaybackState = { index: null, attack: null, step: null, done: false }
+const IDLE: PlaybackState = { index: null, attack: null, step: null, done: false, isFinishing: false }
 
 const attacksInOrder = (playback: RoundResolved): [AttackEvent, AttackEvent] | null => {
   const [first, second] = playback.playbackOrder.map((slot) => playback.attacks.find((a) => a.actor === slot))
@@ -36,17 +39,18 @@ export function usePlayback(playback: RoundResolved | null, reducedMotion: boole
       return
     }
 
-    const steps = buildAttackTimeline(reducedMotion)
+    const finishing = finishingIndex(playback)
     const timers: number[] = []
     let elapsed = 0
     for (const index of [0, 1] as const) {
-      for (const step of steps) {
+      const isFinishing = finishing === index
+      for (const step of buildAttackTimeline(reducedMotion, { isFinishing })) {
         const at = elapsed
-        timers.push(window.setTimeout(() => setState({ index, attack: attacks[index], step: step.kind, done: false }), at))
+        timers.push(window.setTimeout(() => setState({ index, attack: attacks[index], step: step.kind, done: false, isFinishing }), at))
         elapsed += step.ms
       }
     }
-    timers.push(window.setTimeout(() => setState({ index: 1, attack: attacks[1], step: null, done: true }), elapsed))
+    timers.push(window.setTimeout(() => setState({ index: 1, attack: attacks[1], step: null, done: true, isFinishing: false }), elapsed))
 
     return () => {
       for (const t of timers) window.clearTimeout(t)

@@ -40,6 +40,8 @@ function Side({ player, id, side, maxHp }: { player: PublicPlayer | undefined; i
       <div className="hud__col">
         <div className="hud__name">{name}</div>
         <div className="hpbar">
+          {/* 잔상: 깎인 만큼 붉은 띠가 천천히 따라 줄어든다 */}
+          <div className="hpbar__ghost" style={{ width: `${pct}%` }} />
           <div className={`hpbar__fill${pct <= LOW_HP_RATIO * 100 ? ' is-low' : ''}`} style={{ width: `${pct}%` }} />
         </div>
         <div className="hud__meta">

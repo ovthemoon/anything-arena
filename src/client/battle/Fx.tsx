@@ -8,12 +8,21 @@ export interface FxProps {
   /** 피격자가 있는 쪽 */
   targetSide?: 'left' | 'right'
   showDamage?: boolean
+  /** 결정타 강조 */
+  isFinishing?: boolean
 }
 
-/** 기술명·만화 글씨·피해 숫자. 순수 표시 컴포넌트. */
-export function Fx({ kind, text = '', outcome = 'NORMAL', damage = 0, targetSide = 'right', showDamage = false }: FxProps) {
+/** 기술명 컷인·만화 글씨·피해 숫자. 순수 표시 컴포넌트. */
+export function Fx({ kind, text = '', outcome = 'NORMAL', damage = 0, targetSide = 'right', showDamage = false, isFinishing = false }: FxProps) {
   if (kind === 'none') return null
-  if (kind === 'name') return <div className="fx fx--name">{text}</div>
+  if (kind === 'name') {
+    return (
+      <div className="cutin">
+        <div className="cutin__strip" />
+        <div className="fx fx--name">{text}</div>
+      </div>
+    )
+  }
 
   const labelCls = ['fx', 'fx--label', `fx--on-${targetSide}`]
   if (outcome === 'STRONG') labelCls.push('is-big')
@@ -22,6 +31,7 @@ export function Fx({ kind, text = '', outcome = 'NORMAL', damage = 0, targetSide
 
   const dmgCls = ['fx', 'fx--damage', `fx--on-${targetSide}`]
   if (outcome === 'STRONG') dmgCls.push('is-big')
+  if (isFinishing) dmgCls.push('is-finishing')
 
   const isHit = outcome === 'STRONG' || outcome === 'NORMAL'
   return (

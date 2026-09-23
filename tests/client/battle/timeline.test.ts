@@ -23,3 +23,22 @@ describe('buildAttackTimeline', () => {
     expect(buildAttackTimeline(false)).not.toBe(buildAttackTimeline(false))
   })
 })
+
+describe('buildAttackTimeline finishing blow', () => {
+  test('slows the travel and holds the freeze longer', () => {
+    const normal = buildAttackTimeline(false)
+    const finishing = buildAttackTimeline(false, { isFinishing: true })
+    expect(finishing.map((s) => s.kind)).toEqual(normal.map((s) => s.kind))
+    expect(finishing.find((s) => s.kind === 'travel')?.ms).toBeGreaterThan(STEP_MS.travel)
+    expect(finishing.find((s) => s.kind === 'freeze')?.ms).toBeGreaterThan(STEP_MS.freeze)
+  })
+
+  test('holds the result long enough for the bigger damage number', () => {
+    const finishing = buildAttackTimeline(false, { isFinishing: true })
+    expect(finishing.find((s) => s.kind === 'result')?.ms).toBeGreaterThanOrEqual(900)
+  })
+
+  test('reduced motion ignores the slow-mo', () => {
+    expect(buildAttackTimeline(true, { isFinishing: true })).toEqual(buildAttackTimeline(true))
+  })
+})
