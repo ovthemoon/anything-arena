@@ -225,9 +225,9 @@ export function Arena({ roomCode, autoJoin = false }: ArenaProps) {
   return (
     <LangProvider lang={lang}>
     <div ref={stageRef} className="arena" style={{ position: 'relative' }}>
-      {!match && (
+      {(!match || state.connection === 'closed') && (
         <div className="subtitle" style={{ bottom: '48%' }}>
-          {state.connection === 'reconnecting' ? t.arena.reconnecting : t.arena.connecting}
+          {state.connection === 'closed' ? t.arena.closed : state.connection === 'reconnecting' ? t.arena.reconnecting : t.arena.connecting}
         </div>
       )}
       {match && !isBattle && !isFinished && (

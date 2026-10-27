@@ -14,7 +14,7 @@ export interface RejectedInfo {
 }
 
 export interface ClientState {
-  connection: 'idle' | 'connecting' | 'open' | 'reconnecting'
+  connection: 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed'
   you: ConnectionRole | null
   match: PublicMatchState | null
   playback: RoundResolved | null

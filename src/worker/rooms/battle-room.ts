@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { createAiAdapters, type AiAdapters } from '../ai'
 import { type EngineState, createMatch, setConnected, toPublic } from '../game/engine'
 import { isAllowedOrigin, readSeatCookie, verifySeatToken } from '../security/session'
+import { RULES } from '../../shared/rules/constants'
 import { LIMITS } from '../../shared/rules/limits'
 import { parseLang } from '../../shared/i18n/lang'
 import { ConnectionRole, PlayerSlot } from '../../shared/schemas/enums'
@@ -32,6 +33,7 @@ export class BattleRoom extends DurableObject<Env> {
   private seats: Seats = { A: false, B: false }
   private processed = new Set<string>()
   private rematchVotes: PlayerSlot[] = []
+  private idleExpiresAt = 0
   private readonly ai: AiAdapters
   private readonly roomCtx: RoomCtx
 
@@ -44,6 +46,8 @@ export class BattleRoom extends DurableObject<Env> {
       this.seats = (await ctx.storage.get<Seats>('seats')) ?? { A: false, B: false }
       this.processed = new Set((await ctx.storage.get<string[]>('processedActionIds')) ?? [])
       this.rematchVotes = (await ctx.storage.get<PlayerSlot[]>('rematchVotes')) ?? []
+      this.idleExpiresAt = (await ctx.storage.get<number>('idleExpiresAt')) ?? 0
+      if (this.isIdle() && !this.idleExpiresAt && !(await ctx.storage.getAlarm())) await this.scheduleIdle()
     })
   }
 
@@ -68,10 +72,15 @@ export class BattleRoom extends DurableObject<Env> {
       this.seats = { A: false, B: botSlot === BOT_SLOT }
       await this.ctx.storage.put('seats', this.seats)
       await this.commit(armBot(createMatch(roomCode, crypto.randomUUID(), Date.now(), botSlot, lang), Date.now()))
+      await this.scheduleIdle()
       return json({ ok: true })
     }
     if (!this.state) return json({ error: 'not found' }, 404)
-    if (action === 'join') return this.claimSeat(url.searchParams.get('held'))
+    if (action === 'join') {
+      const response = await this.claimSeat(url.searchParams.get('held'))
+      if (response.ok) await this.scheduleIdle(true)
+      return response
+    }
     if (action === 'state') return json(toPublic(this.state))
     return json({ error: 'unknown' }, 404)
   }
@@ -109,6 +118,11 @@ export class BattleRoom extends DurableObject<Env> {
     const { 0: client, 1: server } = new WebSocketPair()
     this.ctx.acceptWebSocket(server, [role])
     server.serializeAttachment({ role } satisfies Attachment)
+    if (this.idleExpiresAt) {
+      this.idleExpiresAt = 0
+      await this.ctx.storage.delete('idleExpiresAt')
+      if (this.isIdlePhase()) await this.ctx.storage.deleteAlarm()
+    }
     if (role !== SCREEN) await this.commit(setConnected(this.requireState(), role, true))
     this.broadcastSnapshot()
     return new Response(null, { status: 101, webSocket: client })
@@ -141,6 +155,7 @@ export class BattleRoom extends DurableObject<Env> {
     const stillOpen = this.openSockets(role).some((s) => s !== ws)
     if (role !== SCREEN && !stillOpen) await this.commit(setConnected(this.state, role, false))
     if (role === SCREEN || !stillOpen) this.broadcastSnapshot()
+    await this.scheduleIdle()
   }
 
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
@@ -150,7 +165,21 @@ export class BattleRoom extends DurableObject<Env> {
 
   async alarm(): Promise<void> {
     if (!this.state) return
+    if (this.isIdle()) {
+      await this.ctx.blockConcurrencyWhile(async () => {
+        if (this.idleExpiresAt && this.idleExpiresAt <= Date.now()) {
+          await this.ctx.storage.deleteAll()
+          this.state = null
+          this.seats = { A: false, B: false }
+          this.processed.clear()
+          this.rematchVotes = []
+          this.idleExpiresAt = 0
+        } else await this.scheduleIdle()
+      })
+      return
+    }
     await onAlarm(this.roomCtx, Date.now())
+    await this.scheduleIdle()
   }
 
   // ---- dispatch ----
@@ -181,8 +210,35 @@ export class BattleRoom extends DurableObject<Env> {
   }
 
   private async commit(next: EngineState): Promise<void> {
+    const previousMatchId = this.state?.matchId
     this.state = next
     await this.ctx.storage.put('state', next)
+    if (previousMatchId && previousMatchId !== next.matchId) await this.pruneMatchCache()
+  }
+
+  private isIdlePhase(): boolean {
+    return this.state !== null && ['LOBBY', 'PREPARING', 'FINISHED'].includes(this.state.phase)
+  }
+
+  private isIdle(): boolean {
+    return this.isIdlePhase() && !this.ctx.getWebSockets().some((socket) => socket.readyState === WebSocket.OPEN)
+  }
+
+  private async scheduleIdle(reset = false): Promise<void> {
+    if (!this.isIdle()) return
+    if (reset || !this.idleExpiresAt) {
+      this.idleExpiresAt = Date.now() + RULES.IDLE_ROOM_TTL_MS
+      await this.ctx.storage.put('idleExpiresAt', this.idleExpiresAt)
+    }
+    await this.ctx.storage.setAlarm(this.idleExpiresAt)
+  }
+
+  private async pruneMatchCache(): Promise<void> {
+    for (const prefix of ['commentary:', 'weaponBudget:']) {
+      const entries = await this.ctx.storage.list({ prefix })
+      const stale = [...entries.keys()].filter((key) => !key.startsWith(`${prefix}${this.state?.matchId}:`))
+      for (let i = 0; i < stale.length; i += 128) await this.ctx.storage.delete(stale.slice(i, i + 128))
+    }
   }
 
   private roleOf(ws: WebSocket): ConnectionRole | null {
@@ -226,7 +282,7 @@ export class BattleRoom extends DurableObject<Env> {
       broadcast: (msg) => this.broadcast(msg),
       broadcastSnapshot: () => this.broadcastSnapshot(),
       setAlarm: (at) => storage.setAlarm(at),
-      clearAlarm: () => storage.deleteAlarm(),
+      clearAlarm: async () => { await storage.deleteAlarm(); await this.scheduleIdle() },
       isProcessed: (id) => this.processed.has(id),
       markProcessed: async (id) => {
         this.processed = new Set([...this.processed, id])
@@ -242,7 +298,11 @@ export class BattleRoom extends DurableObject<Env> {
         await storage.put('rematchVotes', votes)
       },
       cacheGet: <T,>(key: string) => storage.get<T>(key),
-      cachePut: <T,>(key: string, value: T) => storage.put(key, value),
+      cachePut: async <T,>(key: string, value: T) => {
+        if (!this.state) return
+        if ((key.startsWith('commentary:') || key.startsWith('weaponBudget:')) && !key.includes(`:${this.state.matchId}:`)) return
+        await storage.put(key, value)
+      },
     }
   }
 }

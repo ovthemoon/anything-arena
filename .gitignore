@@ -34,3 +34,13 @@ dist-ssr
 # Cloudflare / Wrangler
 .wrangler
 worker-configuration.d.ts
+
+# Credentials and local deployment state
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+*.pem
+.vercel/
+coverage/

@@ -45,7 +45,32 @@ const generateWeapon = async (ctx: RoomCtx, slot: PlayerSlot, msg: WeaponSubmit)
   return defaultWeapon(slot, ctx.getState().lang)
 }
 
+const weaponInFlight = new WeakMap<RoomCtx, Set<PlayerSlot>>()
+type WeaponBudget = { ids: string[]; nextAt: number }
+const MAX_WEAPON_SUBMISSIONS = 5
+
 export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: WeaponSubmit): Promise<void> => {
+  const busy = weaponInFlight.get(ctx) ?? new Set<PlayerSlot>()
+  weaponInFlight.set(ctx, busy)
+  const reject = (reasonCode: string, canRetry: boolean): void =>
+    ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode, canRetry })
+  if (busy.has(slot)) { reject('WEAPON_BUSY', true); return }
+  if (!isPreMatch(ctx) || ctx.getState().players[slot].ready) { reject('NOT_IN_LOBBY', false); return }
+  busy.add(slot)
+  try {
+    const matchId = ctx.getState().matchId
+    const key = `weaponBudget:${matchId}:${slot}`
+    const budget = (await ctx.cacheGet<WeaponBudget>(key)) ?? { ids: [], nextAt: 0 }
+    if (budget.ids.includes(msg.requestId)) { ctx.broadcastSnapshot(); return }
+    if (budget.ids.length >= MAX_WEAPON_SUBMISSIONS) { reject('WEAPON_LIMIT', false); return }
+    if (Date.now() < budget.nextAt) { reject('WEAPON_COOLDOWN', true); return }
+    await ctx.cachePut(key, { ids: [...budget.ids, msg.requestId], nextAt: Date.now() + 2000 })
+    if (ctx.getState().matchId !== matchId) return
+    await submitWeapon(ctx, slot, msg, matchId)
+  } finally { busy.delete(slot) }
+}
+
+const submitWeapon = async (ctx: RoomCtx, slot: PlayerSlot, msg: WeaponSubmit, matchId: string): Promise<void> => {
   if (!isPreMatch(ctx) || ctx.getState().players[slot].ready) {
     ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode: 'NOT_IN_LOBBY', canRetry: false })
     return
@@ -56,6 +81,7 @@ export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: We
     ctx.sendTo(slot, { type: 'input_rejected', actionId: msg.requestId, reasonCode: 'MODERATION', canRetry: true })
     return
   }
+  if (ctx.getState().matchId !== matchId || !isPreMatch(ctx) || ctx.getState().players[slot].ready) return
   // 출연진을 골랐으면 AI 생성 없이 고정 카드. 즉석 무기는 라운드마다 입력하는 한 마디다.
   if (msg.weapon.characterId) {
     const { matchId, lang } = ctx.getState()
@@ -64,11 +90,11 @@ export const handleWeaponSubmit = async (ctx: RoomCtx, slot: PlayerSlot, msg: We
     return
   }
   const weapon = await generateWeapon(ctx, slot, msg)
-  if (!isPreMatch(ctx)) return
+  if (ctx.getState().matchId !== matchId || !isPreMatch(ctx) || ctx.getState().players[slot].ready) return
   await ctx.commit(setWeapon(ctx.getState(), slot, weapon, nickname.trim()))
   ctx.broadcastSnapshot()
   // 무기 그림은 카드가 뜬 뒤 따라온다. 전투를 기다리게 하지 않는다 (연출 설계 §7-4).
-  void attachWeaponImage(ctx, slot, weapon, nickname.trim())
+  await attachWeaponImage(ctx, slot, weapon, nickname.trim())
 }
 
 const attachWeaponImage = async (ctx: RoomCtx, slot: PlayerSlot, weapon: WeaponProfile, nickname: string): Promise<void> => {

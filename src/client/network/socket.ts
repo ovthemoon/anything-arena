@@ -1,8 +1,8 @@
 import { ServerMessage, type ClientMessage } from '../../shared/schemas/messages'
 
-const RECONNECT_BACKOFF_MS = [1000, 2000, 4000, 8000]
+const RECONNECT_BACKOFF_MS = [1000, 2000, 4000, 8000, 15000, 30000]
 
-export type ConnectionStatus = 'connecting' | 'open' | 'reconnecting'
+export type ConnectionStatus = 'connecting' | 'open' | 'reconnecting' | 'closed'
 
 export interface Socket {
   send: (message: ClientMessage) => void
@@ -13,7 +13,7 @@ const socketUrl = (roomCode: string): string =>
   `${location.origin.replace(/^http/, 'ws')}/ws/room/${roomCode}`
 
 /**
- * Thin WebSocket wrapper: reconnects with 1s→2s→4s→8s backoff, sends
+ * Thin WebSocket wrapper: reconnects with bounded backoff (at most ten failed attempts), sends
  * request_snapshot on every open, and queues outgoing messages while
  * disconnected. Incoming frames are validated with ServerMessage.safeParse
  * before being handed to onMessage — invalid frames are dropped silently.
@@ -30,6 +30,7 @@ export function createSocket(
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
   const send = (message: ClientMessage): void => {
+    if (closedByClient) return
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message))
       return
@@ -47,6 +48,7 @@ export function createSocket(
 
   const scheduleReconnect = (): void => {
     if (closedByClient) return
+    if (attempt >= 10) { closedByClient = true; queue = []; onStatusChange?.('closed'); return }
     onStatusChange?.('reconnecting')
     const delay = RECONNECT_BACKOFF_MS[Math.min(attempt, RECONNECT_BACKOFF_MS.length - 1)]
     attempt += 1
@@ -54,6 +56,7 @@ export function createSocket(
   }
 
   function connect(): void {
+    if (closedByClient) return
     onStatusChange?.(attempt === 0 ? 'connecting' : 'reconnecting')
     const socket = new WebSocket(socketUrl(roomCode))
     ws = socket
@@ -76,7 +79,14 @@ export function createSocket(
       if (result.success) onMessage(result.data)
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
+      if (socket !== ws) return
+      if ([1000, 1008, 4000, 4001].includes(event.code)) {
+        closedByClient = true
+        queue = []
+        onStatusChange?.('closed')
+        return
+      }
       scheduleReconnect()
     })
 

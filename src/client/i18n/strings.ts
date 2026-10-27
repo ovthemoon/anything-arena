@@ -5,8 +5,8 @@ export interface Strings {
   appTitle: string
   langToggle: string
   start: { tagline: string; example: string; createRoom: string; soloRoom: string; codePlaceholder: string; join: string; createFailed: string; networkError: string }
-  arena: { joinFailedTitle: string; joinFailed: (status: number) => string; joinNetworkError: string; connecting: string; reconnecting: string; sound: string; shake: string; foul: string; foulLock: string }
-  lobby: { myWeakPoints: string; weakPoints: string; howToPlay: string; placeholderArt: string; pickingCharacter: string; emptySeat: string; qrAlt: string; joinWithPhone: string; waitingForBoth: string; nicknamePlaceholder: (max: number) => string; nicknameRejected: string; entering: string; enter: string; waitingOpponent: string; ready: string }
+  arena: { joinFailedTitle: string; joinFailed: (status: number) => string; joinNetworkError: string; connecting: string; reconnecting: string; closed: string; sound: string; shake: string; foul: string; foulLock: string }
+  lobby: { myWeakPoints: string; weakPoints: string; howToPlay: string; placeholderArt: string; pickingCharacter: string; emptySeat: string; qrAlt: string; joinWithPhone: string; waitingForBoth: string; nicknamePlaceholder: (max: number) => string; nicknameRejected: string; submissionWait: string; submissionLimit: string; entering: string; enter: string; waitingOpponent: string; ready: string }
   hud: { waiting: string; foulCards: string; weakPoints: string; ready: string; round: (n: number) => string }
   action: { rejectDefault: string; rejectRewrite: string; rejectModeration: string; rejectFoul: string; rejectOutsideCapability: string; rejectSystemInstruction: string; rejectTimeout: string; presetOnly: string; opponentWeakPoints: string; inputLocked: string; inputPlaceholder: string; attack: string; shuffle: string; noIdea: string; validating: string; submitted: string }
   battle: { fight: string; frozen: string }
@@ -33,6 +33,7 @@ const ko: Strings = {
     joinNetworkError: '참가 요청 실패 (네트워크)',
     connecting: '연결 중…',
     reconnecting: '다시 연결하는 중…',
+    closed: '연결이 종료됐어요. 다시 참여하려면 새로고침해 주세요.',
     sound: '소리',
     shake: '흔들림',
     foul: '삐익! 인신공격 반칙입니다. 무기로 승부하세요.',
@@ -50,6 +51,8 @@ const ko: Strings = {
     waitingForBoth: '두 사람이 캐릭터를 고르고 준비하면 시작합니다.',
     nicknamePlaceholder: (max) => `닉네임 (${max}자, 비우면 캐릭터 이름)`,
     nicknameRejected: '닉네임을 확인해 주세요. 사람과 가족은 공격하지 마세요.',
+    submissionWait: '잠시 후 다시 시도해 주세요.',
+    submissionLimit: '변경 횟수를 모두 사용했어요.',
     entering: '입장 중…',
     enter: '이 캐릭터로 입장',
     waitingOpponent: '상대를 기다리는 중…',
@@ -107,6 +110,7 @@ const en: Strings = {
     joinNetworkError: 'Join request failed (network)',
     connecting: 'Connecting…',
     reconnecting: 'Reconnecting…',
+    closed: 'Connection closed. Refresh to rejoin.',
     sound: 'Sound',
     shake: 'Shake',
     foul: 'Whistle! Personal attacks are a foul. Fight with your weapon.',
@@ -124,6 +128,8 @@ const en: Strings = {
     waitingForBoth: 'The match starts once both players pick a character and get ready.',
     nicknamePlaceholder: (max) => `Nickname (${max} chars, blank = character name)`,
     nicknameRejected: 'Please check your nickname. No attacks on real people or families.',
+    submissionWait: 'Please try again shortly.',
+    submissionLimit: 'No changes remaining for this match.',
     entering: 'Entering…',
     enter: 'Enter as this character',
     waitingOpponent: 'Waiting for opponent…',

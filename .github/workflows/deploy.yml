@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers
+name: Check and deploy Cloudflare Workers
 
 on:
   push:
@@ -15,8 +15,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Use local example environment for type generation
+        run: cp .env.example .env
+      - run: npm test
       - run: npm run build
       - uses: cloudflare/wrangler-action@v3
+        if: github.event_name == 'workflow_dispatch'
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

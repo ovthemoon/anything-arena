@@ -196,7 +196,8 @@ export function LobbyScreen({ state, you, roomCode, characterIds, onPickCharacte
               ))}
             </div>
             <input className="input" value={nickname} maxLength={LIMITS.NICKNAME * 2} placeholder={t.nicknamePlaceholder(LIMITS.NICKNAME)} onChange={(e) => setNickname(e.target.value)} disabled={submitted} />
-            {state.rejected && <div className="err">{t.nicknameRejected}</div>}
+            {state.rejected && <div className="err">{state.rejected.reasonCode === 'WEAPON_LIMIT' ? t.submissionLimit :
+              ['WEAPON_BUSY', 'WEAPON_COOLDOWN'].includes(state.rejected.reasonCode) ? t.submissionWait : t.nicknameRejected}</div>}
             <button type="button" className="btn" disabled={!canEnter} onClick={enter}>
               {submitted ? t.entering : t.enter}
             </button>

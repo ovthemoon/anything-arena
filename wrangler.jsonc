@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "anything-arena",
+  "workers_dev": true,
+  "preview_urls": false,
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-09-20",
   "compatibility_flags": ["nodejs_compat"],
